@@ -1,145 +1,163 @@
-Semana 13: Análisis metataxonómico de comunidades bacterianas con datos de secuenciación Nanopore
-Logro de la sesión:
+# Semana 13: Análisis metataxonómico de comunidades bacterianas con datos de secuenciación Nanopore
+
+## Logro de la sesión:
 
 Al finalizar la sesión, el estudiante procesa lecturas Nanopore del gen 16S rRNA completo, asigna taxonomía a nivel de especie con EMU, construye una tabla BIOM y compara la composición y la diversidad de comunidades bacterianas en MicrobiomeAnalyst: primero con quesos (demo) y luego con muestras de suelo secuenciadas por el curso.
 
-Estructura de la práctica:
-Acceso al servidor de cómputo
-Preparación del entorno y de los datos demo
-Control de calidad de las lecturas crudas
-Filtrado por calidad y longitud con chopper
-Asignación taxonómica con EMU
-Construcción del archivo BIOM
-Análisis en MicrobiomeAnalyst
-Análisis de las muestras de su grupo
+## Estructura de la práctica:
 
-Cómo está organizada esta práctica: se trabaja en dos partes con los mismos comandos.
+1. Acceso al servidor de cómputo
+2. Preparación del entorno y de los datos demo
+3. Control de calidad de las lecturas crudas
+4. Filtrado por calidad y longitud con chopper
+5. Asignación taxonómica con EMU
+6. Construcción del archivo BIOM
+7. Análisis en MicrobiomeAnalyst
+8. Análisis de las muestras de su grupo
 
-Parte A, demo (secciones 2 a 7). Todos los grupos analizan cuatro quesos tipo paria del semestre 2026-1, secuenciados con el gen 16S completo (primers 27F/1492R, ~1 500 pb) en un MinION. Las cuatro muestras forman dos grupos de dos: quesos de Arequipa y quesos de Junín.
-Parte B, sus muestras (sección 8). Cada grupo procesa sus cuatro barcodes de este semestre (suelos de lomas o rizosfera de arándano) hasta EMU, sube sus clasificaciones a una carpeta compartida y copia las de su grupo par. Con las 8 muestras del par construye el BIOM y lo analiza en MicrobiomeAnalyst.
+> **Cómo está organizada esta práctica:** se trabaja en dos partes con los mismos comandos.
+>
+> - **Parte A, demo (secciones 2 a 7).** Todos los grupos analizan cuatro quesos tipo paria del semestre 2026-1, secuenciados con el gen 16S completo (primers 27F/1492R, ~1 500 pb) en un MinION. Las cuatro muestras forman dos grupos de dos: quesos de **Arequipa** y quesos de **Junín**.
+> - **Parte B, sus muestras (sección 8).** Cada grupo procesa sus cuatro barcodes de este semestre (suelos de lomas o rizosfera de arándano) hasta EMU, sube sus clasificaciones a una carpeta compartida y copia las de su grupo par. Con las 8 muestras del par construye el BIOM y lo analiza en MicrobiomeAnalyst.
+>
+> En la demo, cada comando se ejecuta por separado, una muestra a la vez, para revisar el resultado de cada muestra antes de pasar a la siguiente. En la sección 8 no se repiten los comandos: se indican los pasos y cada grupo los escribe a partir de la demo.
+>
+> Muestras demo (`/data/2026_1/metagenomics/metataxonomic/`):
+>
+> | Muestra | Código | Departamento | Maduración (días) | Inóculo |
+> |---|---|---|---|---|
+> | b41 | AR01 | Arequipa | 20 | sí |
+> | b42 | AR02 | Arequipa | 15 | no |
+> | b49 | JU01 | Junín | 15 | sí |
+> | b50 | JU02 | Junín | 30 | sí |
+>
+> La metadata (`metadata_queso_demo_MA.txt`) y el script de conversión a BIOM (`emu_a_otu.awk`) están en `/data/2026_2/metagenomics/metataxonomic/data/`; se copian de allí en las secciones 2 y 6.
+>
+> Con dos muestras por grupo ninguna prueba estadística puede dar p < 0,05. La demo sirve para aprender el flujo y leer los gráficos; las conclusiones se discuten como tendencias.
 
-En la demo, cada comando se ejecuta por separado, una muestra a la vez, para revisar el resultado de cada muestra antes de pasar a la siguiente. En la sección 8 no se repiten los comandos: se indican los pasos y cada grupo los escribe a partir de la demo.
+## Flujo de trabajo:
 
-Muestras demo (/data/2026_1/metagenomics/metataxonomic/):
+### Procesamiento de las lecturas en el servidor (secciones 2 a 6):
 
-Muestra	Código	Departamento	Maduración (días)	Inóculo
-b41	AR01	Arequipa	20	sí
-b42	AR02	Arequipa	15	no
-b49	JU01	Junín	15	sí
-b50	JU02	Junín	30	sí
+```mermaid
+flowchart LR
+    subgraph SRV["Servidor"]
+        direction LR
+        A["FASTQ por barcode (b41, b42, b49, b50)"] --> B["NanoPlot + MultiQC (calidad cruda)"]
+        A --> C["chopper (Q ≥ 10; 1 200–1 700 pb)"]
+        C --> D["seqkit stats (lecturas filtradas)"]
+        C --> E["emu abundance (base EMU default)"]
+        E --> F["emu combine-outputs (tabla de conteos)"]
+        F --> G["awk (tabla OTU con taxonomía)"]
+        G --> H["biom convert (queso_demo_emu.biom)"]
+    end
+```
 
-La metadata (metadata_queso_demo_MA.txt) y el script de conversión a BIOM (emu_a_otu.awk) están en /data/2026_2/metagenomics/metataxonomic/data/; se copian de allí en las secciones 2 y 6.
+### Análisis en línea (sección 7):
 
-Con dos muestras por grupo ninguna prueba estadística puede dar p < 0,05. La demo sirve para aprender el flujo y leer los gráficos; las conclusiones se discuten como tendencias.
+```mermaid
+flowchart LR
+    subgraph MA["MicrobiomeAnalyst (en línea)"]
+        direction LR
+        A["queso_demo_emu.biom + metadata_MA.txt"] --> B["Data Integrity Check"]
+        B --> C["Data Filtering"]
+        C --> D["Normalization"]
+        D --> E["Composición (barras, pie, heat tree)"]
+        D --> F["Core microbiome y heatmap"]
+        D --> G["Diversidad alfa"]
+        D --> H["Diversidad beta (PCoA, NMDS)"]
+        D --> I["Abundancia diferencial (LEfSe, DESeq2)"]
+    end
+```
 
-Flujo de trabajo:
-Procesamiento de las lecturas en el servidor (secciones 2 a 6):
-Servidor
-FASTQ por barcode (b41,b42, b49, b50)
-NanoPlot + MultiQC(calidad cruda)
-chopper (Q ≥ 10; 1 200–1700 pb)
-seqkit stats (lecturasfiltradas)
-emu abundance (base EMUdefault)
-emu combine-outputs(tabla de conteos)
-awk (tabla OTU contaxonomía)
-biom convert(queso_demo_emu.biom)
-Análisis en línea (sección 7):
-MicrobiomeAnalyst (en línea)
-queso_demo_emu.biom +metadata_MA.txt
-Data Integrity Check
-Data Filtering
-Normalization
-Composición (barras, pie,heat tree)
-Core microbiome yheatmap
-Diversidad alfa
-Diversidad beta (PCoA,NMDS)
-Abundancia diferencial(LEfSe, DESeq2)
-Programas requeridos:
-Programas de acceso al servidor:
+## Programas requeridos:
+
+### Programas de acceso al servidor:
 
 PuTTY v0.79 https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
-
-Descripción: cliente SSH para establecer conexiones de línea de comandos con el servidor.
+   - **Descripción:** cliente SSH para establecer conexiones de línea de comandos con el servidor.
 
 WinSCP v6.1 https://winscp.net/eng/download.php
+   - **Descripción:** cliente SFTP con interfaz gráfica para transferir archivos entre su computadora y el servidor. En esta práctica se usa para descargar los reportes de calidad y los archivos que se cargan en MicrobiomeAnalyst.
 
-Descripción: cliente SFTP con interfaz gráfica para transferir archivos entre su computadora y el servidor. En esta práctica se usa para descargar los reportes de calidad y los archivos que se cargan en MicrobiomeAnalyst.
-Programas bioinformáticos:
+### Programas bioinformáticos:
 
 NanoPlot https://github.com/wdecoster/NanoPlot
-
-Descripción: genera gráficos y estadísticas de lecturas largas: distribución de longitudes, calidad media y relación entre ambas. Se usa para ver el estado de las lecturas antes de filtrarlas.
+   - **Descripción:** genera gráficos y estadísticas de lecturas largas: distribución de longitudes, calidad media y relación entre ambas. Se usa para ver el estado de las lecturas antes de filtrarlas.
 
 MultiQC https://multiqc.info
-
-Descripción: reúne en un solo reporte HTML los resultados de NanoPlot de todas las muestras, para compararlas lado a lado.
+   - **Descripción:** reúne en un solo reporte HTML los resultados de NanoPlot de todas las muestras, para compararlas lado a lado.
 
 seqkit https://bioinf.shenwei.me/seqkit/
-
-Descripción: conjunto de utilidades para archivos FASTA/FASTQ. Con seqkit stats se obtiene el número de lecturas, la longitud media, el N50 y la calidad media de cada archivo.
+   - **Descripción:** conjunto de utilidades para archivos FASTA/FASTQ. Con `seqkit stats` se obtiene el número de lecturas, la longitud media, el N50 y la calidad media de cada archivo.
 
 chopper https://github.com/wdecoster/chopper
-
-Descripción: filtra lecturas Nanopore por calidad media y por longitud. Es el sucesor de NanoFilt, del mismo autor; está escrito en Rust y es bastante más rápido.
+   - **Descripción:** filtra lecturas Nanopore por calidad media y por longitud. Es el sucesor de NanoFilt, del mismo autor; está escrito en Rust y es bastante más rápido.
 
 EMU https://github.com/treangenlab/emu
-
-Descripción: EMU (Expectation-Maximization algorithm for Microbial community profiling) alinea cada lectura con minimap2 contra una base de secuencias 16S y estima, con un algoritmo de esperanza-maximización, la abundancia de cada especie. Fue diseñado para lecturas largas con errores, como las de Nanopore, y resuelve hasta especie con el gen 16S completo.
+   - **Descripción:** EMU (*Expectation-Maximization algorithm for Microbial community profiling*) alinea cada lectura con minimap2 contra una base de secuencias 16S y estima, con un algoritmo de esperanza-maximización, la abundancia de cada especie. Fue diseñado para lecturas largas con errores, como las de Nanopore, y resuelve hasta especie con el gen 16S completo.
 
 biom-format https://biom-format.org/
+   - **Descripción:** formato estándar para tablas de abundancia de microbiomas (*Biological Observation Matrix*). El comando `biom`, instalado en el entorno de QIIME 2, convierte la tabla de EMU al formato que lee MicrobiomeAnalyst.
 
-Descripción: formato estándar para tablas de abundancia de microbiomas (Biological Observation Matrix). El comando biom, instalado en el entorno de QIIME 2, convierte la tabla de EMU al formato que lee MicrobiomeAnalyst.
-Bases de datos:
+### Bases de datos:
 
 Base EMU default (rrnDB v5.6 + NCBI 16S RefSeq)
+   - **Descripción:** base que distribuye EMU. Une las secuencias del operón ribosomal de rrnDB con las 16S de RefSeq del NCBI y usa la taxonomía del NCBI de la fecha en que se construyó la base. Por eso los filos aparecen con los nombres anteriores a la reforma de 2021 (*Firmicutes*, *Proteobacteria*, *Actinobacteria*, *Bacteroidetes*) y no con los actuales (*Bacillota*, *Pseudomonadota*, *Actinomycetota*, *Bacteroidota*). Solo contiene bacterias y arqueas: no hay cloroplastos ni mitocondrias que eliminar.
 
-Descripción: base que distribuye EMU. Une las secuencias del operón ribosomal de rrnDB con las 16S de RefSeq del NCBI y usa la taxonomía del NCBI de la fecha en que se construyó la base. Por eso los filos aparecen con los nombres anteriores a la reforma de 2021 (Firmicutes, Proteobacteria, Actinobacteria, Bacteroidetes) y no con los actuales (Bacillota, Pseudomonadota, Actinomycetota, Bacteroidota). Solo contiene bacterias y arqueas: no hay cloroplastos ni mitocondrias que eliminar.
-Herramientas bioinformáticas en línea:
+### Herramientas bioinformáticas en línea:
 
 MicrobiomeAnalyst v2.0 https://www.microbiomeanalyst.ca/
+   - **Descripción:** plataforma web para el análisis estadístico y visual de datos de microbioma. Su módulo *Marker Data Profiling* (MDP) recibe una tabla de abundancias con taxonomía y la metadata, y calcula composición, microbioma núcleo, diversidad alfa y beta, y abundancia diferencial.
 
-Descripción: plataforma web para el análisis estadístico y visual de datos de microbioma. Su módulo Marker Data Profiling (MDP) recibe una tabla de abundancias con taxonomía y la metadata, y calcula composición, microbioma núcleo, diversidad alfa y beta, y abundancia diferencial.
-Metodología:
-1. Acceso al servidor de cómputo:
-Abrir el programa PuTTY, colocar el hostname ( 10.142.250.66 ) y port ( 22 ), y dar clic en Open:
+## Metodología:
+
+## 1. Acceso al servidor de cómputo:
+
+### Abrir el programa PuTTY, colocar el hostname ( 10.142.250.66 ) y port ( 22 ), y dar clic en Open:
+
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/92f89dbb-1a21-411d-adb5-38fe486a5567" />
 
-Figura 1. Ventana de configuración de PuTTY. En Host Name se coloca la dirección IP del servidor y en Port el puerto 22 (SSH); el tipo de conexión debe ser SSH.
+**Figura 1.** Ventana de configuración de PuTTY. En *Host Name* se coloca la dirección IP del servidor y en *Port* el puerto 22 (SSH); el tipo de conexión debe ser SSH.
 
-Comentario (figura 1): antes de abrir la sesión, vaya a Connection y en Seconds between keepalives escriba 30. Así la conexión no se corta por inactividad mientras corre EMU. Si la conexión se cae a mitad de un comando, ese comando se interrumpe y hay que volver a ejecutarlo.
+> **Comentario (figura 1):** antes de abrir la sesión, vaya a **Connection** y en *Seconds between keepalives* escriba **30**. Así la conexión no se corta por inactividad mientras corre EMU. Si la conexión se cae a mitad de un comando, ese comando se interrumpe y hay que volver a ejecutarlo.
 
-En la terminal abierta, escribir su usuario y contraseña correspondiente para tener acceso al servidor de cómputo:
+### En la terminal abierta, escribir su usuario y contraseña correspondiente para tener acceso al servidor de cómputo:
+
 <img width="700" alt="image" src="https://github.com/user-attachments/assets/4d246e93-c59c-4749-a2dd-03db25c53654" />
 
-Figura 2. Terminal de PuTTY al iniciar la sesión. Al escribir la contraseña no se muestran caracteres en pantalla; es el comportamiento normal.
+**Figura 2.** Terminal de PuTTY al iniciar la sesión. Al escribir la contraseña no se muestran caracteres en pantalla; es el comportamiento normal.
 
-Abrir el programa WinSCP, colocar el hostname ( 10.142.250.66 ) y port ( 22 ), escribir su usuario y contraseña correspondiente para tener acceso al servidor de cómputo, y hacer clic en Login:
+### Abrir el programa WinSCP, colocar el hostname ( 10.142.250.66 ) y port ( 22 ), escribir su usuario y contraseña correspondiente para tener acceso al servidor de cómputo, y hacer clic en Login:
+
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/ef4dc253-ce4a-417d-b761-39692d2a011a" />
 
-Figura 3. Ventana de inicio de sesión de WinSCP, con el protocolo SFTP, la dirección del servidor, el puerto 22, el usuario y la contraseña.
+**Figura 3.** Ventana de inicio de sesión de WinSCP, con el protocolo SFTP, la dirección del servidor, el puerto 22, el usuario y la contraseña.
 
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/577debca-6085-47c5-9bbd-73688bfa8bb0" />
 
-Figura 4. Sesión de WinSCP abierta. El panel izquierdo muestra las carpetas de su computadora y el derecho, las del servidor; los archivos se transfieren arrastrándolos de un panel al otro.
+**Figura 4.** Sesión de WinSCP abierta. El panel izquierdo muestra las carpetas de su computadora y el derecho, las del servidor; los archivos se transfieren arrastrándolos de un panel al otro.
 
-Uso compartido del servidor
+### Uso compartido del servidor
 
-El servidor tiene 64 hilos y 180 GB de RAM, y lo usan 6 grupos a la vez. Cada grupo usa como máximo 10 hilos. No use valores mayores que los indicados en los comandos.
+El servidor tiene 64 hilos y 180 GB de RAM, y lo usan **6 grupos a la vez**. Cada grupo usa como máximo **10 hilos**. No use valores mayores que los indicados en los comandos.
 
-Sección	Paso	Tiempo aproximado (10 hilos, 4 muestras)
-3	NanoPlot y MultiQC	5–10 min
-4	chopper y seqkit	2–5 min
-5	EMU	10–30 min
-6	Tabla BIOM	< 1 min
+| Sección | Paso | Tiempo aproximado (10 hilos, 4 muestras) |
+|---|---|---|
+| 3 | NanoPlot y MultiQC | 5–10 min |
+| 4 | chopper y seqkit | 2–5 min |
+| 5 | EMU | 10–30 min |
+| 6 | Tabla BIOM | < 1 min |
 
-Comentario: los tiempos dependen de la carga del servidor. EMU es el paso más lento: alinea cada lectura contra toda la base de referencia.
+> **Comentario:** los tiempos dependen de la carga del servidor. EMU es el paso más lento: alinea cada lectura contra toda la base de referencia.
 
-2. Preparación del entorno y de los datos demo
-Crear la estructura de carpetas
+## 2. Preparación del entorno y de los datos demo
 
-El análisis de la demo se hace en la carpeta demo/, y el de sus muestras (sección 8), en trabajo/. Las dos carpetas están en el mismo nivel, dentro de ~/metataxonomic/nanopore/, y tienen la misma estructura interna:
+### Crear la estructura de carpetas
 
-bash
+El análisis de la demo se hace en la carpeta `demo/`, y el de sus muestras (sección 8), en `trabajo/`. Las dos carpetas están en el mismo nivel, dentro de `~/metataxonomic/nanopore/`, y tienen la misma estructura interna:
+
+```bash
 ~/metataxonomic/nanopore/
 ├── demo/          # Parte A: muestras demo (b41, b42, b49, b50)
 │   ├── 01_qc/
@@ -151,19 +169,23 @@ bash
     ├── 02_chopper/
     ├── 03_emu/
     └── 04_ma/
-bash
+```
+
+```bash
 mkdir -p ~/metataxonomic/nanopore/demo/01_qc/nanoplot_crudo ~/metataxonomic/nanopore/demo/02_chopper ~/metataxonomic/nanopore/demo/03_emu/threshold ~/metataxonomic/nanopore/demo/03_emu/unclassified_reads ~/metataxonomic/nanopore/demo/04_ma
+```
 
-Comentario:
+> **Comentario:**
+> - `mkdir -p` crea todas las carpetas indicadas y las intermedias que falten (`metataxonomic`, `nanopore`, `demo`). Si alguna ya existe, por ejemplo `~/metataxonomic` desde la semana 12, no la toca y no muestra error.
+> - Cada carpeta numerada guarda la salida de un paso: `01_qc`, control de calidad; `02_chopper`, lecturas filtradas; `03_emu`, clasificación taxonómica; `04_ma`, el archivo BIOM para MicrobiomeAnalyst. La numeración sigue el orden del análisis.
 
-mkdir -p crea todas las carpetas indicadas y las intermedias que falten (metataxonomic, nanopore, demo). Si alguna ya existe, por ejemplo ~/metataxonomic desde la semana 12, no la toca y no muestra error.
-Cada carpeta numerada guarda la salida de un paso: 01_qc, control de calidad; 02_chopper, lecturas filtradas; 03_emu, clasificación taxonómica; 04_ma, el archivo BIOM para MicrobiomeAnalyst. La numeración sigue el orden del análisis.
-bash
+```bash
 cd ~/metataxonomic/nanopore/demo
+```
 
-Comentario: entra a la carpeta de la demo. Todos los comandos de las secciones 2 a 6 se ejecutan aquí, con rutas relativas a esta carpeta.
+> **Comentario:** entra a la carpeta de la demo. Todos los comandos de las secciones 2 a 6 se ejecutan aquí, con rutas relativas a esta carpeta.
 
-bash
+```bash
 find ~/metataxonomic/nanopore/demo -type d | sort
 
 /home/<usuario>/metataxonomic/nanopore/demo
@@ -174,31 +196,36 @@ find ~/metataxonomic/nanopore/demo -type d | sort
 /home/<usuario>/metataxonomic/nanopore/demo/03_emu/threshold
 /home/<usuario>/metataxonomic/nanopore/demo/03_emu/unclassified_reads
 /home/<usuario>/metataxonomic/nanopore/demo/04_ma
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** `find ... -type d` lista todas las carpetas (*directories*) que hay dentro de `demo`; `sort` las ordena alfabéticamente.
+> - **Resultado:** las ocho carpetas de la estructura. `<usuario>` será su nombre de usuario.
 
-Comando: find ... -type d lista todas las carpetas (directories) que hay dentro de demo; sort las ordena alfabéticamente.
-Resultado: las ocho carpetas de la estructura. <usuario> será su nombre de usuario.
-Verificar los archivos de entrada
-bash
+### Verificar los archivos de entrada
+
+```bash
 ls -lh /data/2026_1/metagenomics/metataxonomic/b41.fastq.gz /data/2026_1/metagenomics/metataxonomic/b42.fastq.gz /data/2026_1/metagenomics/metataxonomic/b49.fastq.gz /data/2026_1/metagenomics/metataxonomic/b50.fastq.gz
 
 -rw-rw-r-- 1 fguzman fguzman 5,4M nov 20 18:22 /data/2026_1/metagenomics/metataxonomic/b41.fastq.gz
 -rw-rw-r-- 1 fguzman fguzman 5,9M nov 20 18:22 /data/2026_1/metagenomics/metataxonomic/b42.fastq.gz
 -rw-rw-r-- 1 fguzman fguzman 5,4M nov 20 18:22 /data/2026_1/metagenomics/metataxonomic/b49.fastq.gz
 -rw-rw-r-- 1 fguzman fguzman 4,8M nov 20 18:22 /data/2026_1/metagenomics/metataxonomic/b50.fastq.gz
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** `ls -lh` lista los archivos indicados con su tamaño en un formato legible (K, M, G).
+> - **Resultado:** los cuatro archivos existen. Si aparece `No such file or directory`, revise la ruta.
 
-Comando: ls -lh lista los archivos indicados con su tamaño en un formato legible (K, M, G).
-Resultado: los cuatro archivos existen. Si aparece No such file or directory, revise la ruta.
-Copiar la metadata para MicrobiomeAnalyst
-bash
+### Copiar la metadata para MicrobiomeAnalyst
+
+```bash
 cp /data/2026_2/metagenomics/metataxonomic/data/metadata_queso_demo_MA.txt metadata_MA.txt
+```
 
-Comentario: copia la metadata de la demo a la carpeta actual con el nombre metadata_MA.txt. El archivo ya está preparado con tabuladores: si se escribe pegando texto desde PuTTY en nano, los tabuladores suelen convertirse en espacios y MicrobiomeAnalyst no lo lee.
+> **Comentario:** copia la metadata de la demo a la carpeta actual con el nombre `metadata_MA.txt`. El archivo ya está preparado con tabuladores: si se escribe pegando texto desde PuTTY en `nano`, los tabuladores suelen convertirse en espacios y MicrobiomeAnalyst no lo lee.
 
-bash
+```bash
 cat -A metadata_MA.txt
 
 #NAME^Icodigo^Idepartamento^Imaduracion^Iinoculo$
@@ -206,54 +233,68 @@ b41^IAR01^IArequipa^I20^Isi$
 b42^IAR02^IArequipa^I15^Ino$
 b49^IJU01^IJunin^I15^Isi$
 b50^IJU02^IJunin^I30^Isi$
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** `cat -A` muestra los caracteres invisibles: cada tabulador aparece como `^I` y cada fin de línea como `$`.
+> - **Resultado:** cinco columnas separadas por tabuladores. MicrobiomeAnalyst exige que la primera se llame `#NAME` y que sus valores coincidan exactamente con los nombres de las muestras en la tabla BIOM (b41, b42...). La variable que se compara es `departamento`; `maduracion` e `inoculo` sirven para explorar otros patrones en los gráficos.
 
-Comando: cat -A muestra los caracteres invisibles: cada tabulador aparece como ^I y cada fin de línea como $.
-Resultado: cinco columnas separadas por tabuladores. MicrobiomeAnalyst exige que la primera se llame #NAME y que sus valores coincidan exactamente con los nombres de las muestras en la tabla BIOM (b41, b42...). La variable que se compara es departamento; maduracion e inoculo sirven para explorar otros patrones en los gráficos.
-3. Control de calidad de las lecturas crudas
-bash
+## 3. Control de calidad de las lecturas crudas
+
+```bash
 conda activate quality
+```
 
-Comentario: activa el entorno donde están NanoPlot, MultiQC, chopper y seqkit. El nombre del entorno aparece entre paréntesis al inicio de la línea de comandos.
+> **Comentario:** activa el entorno donde están NanoPlot, MultiQC, chopper y seqkit. El nombre del entorno aparece entre paréntesis al inicio de la línea de comandos.
 
-Reporte de NanoPlot de la muestra b41
-bash
+### Reporte de NanoPlot de la muestra b41
+
+```bash
 NanoPlot -t 10 --fastq /data/2026_1/metagenomics/metataxonomic/b41.fastq.gz --only-report -p b41_ -o 01_qc/nanoplot_crudo
+```
 
-Comentario:
+> **Comentario:**
+> - `-t 10`: número de hilos.
+> - `--fastq`: archivo de entrada; NanoPlot lee directamente el FASTQ comprimido.
+> - `--only-report`: genera el reporte HTML y el archivo de estadísticas, sin guardar cada gráfico por separado.
+> - `-p b41_`: prefijo de los archivos de salida (`b41_NanoPlot-report.html`, `b41_NanoStats.txt`). Sin prefijo, cada muestra sobrescribiría a la anterior en la misma carpeta.
+> - `-o 01_qc/nanoplot_crudo`: carpeta de salida.
 
--t 10: número de hilos.
---fastq: archivo de entrada; NanoPlot lee directamente el FASTQ comprimido.
---only-report: genera el reporte HTML y el archivo de estadísticas, sin guardar cada gráfico por separado.
--p b41_: prefijo de los archivos de salida (b41_NanoPlot-report.html, b41_NanoStats.txt). Sin prefijo, cada muestra sobrescribiría a la anterior en la misma carpeta.
--o 01_qc/nanoplot_crudo: carpeta de salida.
-Reporte de NanoPlot de la muestra b42
-bash
+### Reporte de NanoPlot de la muestra b42
+
+```bash
 NanoPlot -t 10 --fastq /data/2026_1/metagenomics/metataxonomic/b42.fastq.gz --only-report -p b42_ -o 01_qc/nanoplot_crudo
+```
 
-Comentario: el mismo comando; cambian el archivo de entrada y el prefijo.
+> **Comentario:** el mismo comando; cambian el archivo de entrada y el prefijo.
 
-Reporte de NanoPlot de la muestra b49
-bash
+### Reporte de NanoPlot de la muestra b49
+
+```bash
 NanoPlot -t 10 --fastq /data/2026_1/metagenomics/metataxonomic/b49.fastq.gz --only-report -p b49_ -o 01_qc/nanoplot_crudo
-Reporte de NanoPlot de la muestra b50
-bash
+```
+
+### Reporte de NanoPlot de la muestra b50
+
+```bash
 NanoPlot -t 10 --fastq /data/2026_1/metagenomics/metataxonomic/b50.fastq.gz --only-report -p b50_ -o 01_qc/nanoplot_crudo
-bash
+```
+
+```bash
 ls 01_qc/nanoplot_crudo
 
 b41_NanoPlot-report.html  b42_NanoPlot-report.html  b49_NanoPlot-report.html  b50_NanoPlot-report.html
 b41_NanoStats.txt         b42_NanoStats.txt         b49_NanoStats.txt         b50_NanoStats.txt
 ...
+```
 
-Comentario: hay un reporte HTML y un archivo de estadísticas por muestra. Puede haber además archivos de registro (.log).
+> **Comentario:** hay un reporte HTML y un archivo de estadísticas por muestra. Puede haber además archivos de registro (`.log`).
 
-Visualizar el reporte de texto de NanoPlot
+### Visualizar el reporte de texto de NanoPlot
 
-NanoPlot guarda las estadísticas de cada muestra en un archivo de texto (_NanoStats.txt). Ábralo directamente en la terminal, una muestra a la vez.
+NanoPlot guarda las estadísticas de cada muestra en un archivo de texto (`_NanoStats.txt`). Ábralo directamente en la terminal, una muestra a la vez.
 
-bash
+```bash
 cat 01_qc/nanoplot_crudo/b41_NanoStats.txt
 
 General summary:         
@@ -283,81 +324,102 @@ Top 5 longest reads and their mean basecall quality score
 3:      3327 (20.9)
 4:      3094 (22.7)
 5:      3078 (19.0)
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** `cat` muestra en pantalla el contenido completo del archivo.
+> - **Resultado:** el reporte tiene tres bloques.
+>   - *General summary*: `Number of reads`, número de lecturas crudas; `Mean read length` y `Median read length`, longitud media y mediana; `Read length N50`, longitud tal que las lecturas de esa longitud o mayores suman la mitad de las bases; `Mean read quality` y `Median read quality`, calidad Phred media y mediana; `STDEV read length`, dispersión de las longitudes; `Total bases`, bases secuenciadas.
+>   - *Reads above quality cutoffs*: número, porcentaje y megabases de lecturas que superan Q10, Q15, Q20, Q25 y Q30. El porcentaje >Q10 anticipa cuántas lecturas conservará chopper con `-q 10`.
+>   - *Top 5*: las cinco lecturas de mayor calidad y las cinco más largas. Si las más largas miden varios kb, la muestra tiene concatémeros, que chopper eliminará con `--maxlength 1700`.
+> - Si la media de longitud es mucho mayor que la mediana, hay pocas lecturas muy largas que arrastran el promedio. Para el 16S completo, la mediana debe estar cerca de 1 500 pb.
 
-Comando: cat muestra en pantalla el contenido completo del archivo.
-Resultado: el reporte tiene tres bloques.
-General summary: Number of reads, número de lecturas crudas; Mean read length y Median read length, longitud media y mediana; Read length N50, longitud tal que las lecturas de esa longitud o mayores suman la mitad de las bases; Mean read quality y Median read quality, calidad Phred media y mediana; STDEV read length, dispersión de las longitudes; Total bases, bases secuenciadas.
-Reads above quality cutoffs: número, porcentaje y megabases de lecturas que superan Q10, Q15, Q20, Q25 y Q30. El porcentaje >Q10 anticipa cuántas lecturas conservará chopper con -q 10.
-Top 5: las cinco lecturas de mayor calidad y las cinco más largas. Si las más largas miden varios kb, la muestra tiene concatémeros, que chopper eliminará con --maxlength 1700.
-Si la media de longitud es mucho mayor que la mediana, hay pocas lecturas muy largas que arrastran el promedio. Para el 16S completo, la mediana debe estar cerca de 1 500 pb.
-bash
+```bash
 cat 01_qc/nanoplot_crudo/b42_NanoStats.txt
-bash
+```
+
+```bash
 cat 01_qc/nanoplot_crudo/b49_NanoStats.txt
-bash
+```
+
+```bash
 cat 01_qc/nanoplot_crudo/b50_NanoStats.txt
+```
 
-Comentario: el mismo reporte para las otras tres muestras. Anote de cada una el número de lecturas, la mediana de longitud, el N50, la calidad media y el porcentaje >Q10: son los datos crudos de la tabla de lecturas de la bitácora.
+> **Comentario:** el mismo reporte para las otras tres muestras. Anote de cada una el número de lecturas, la mediana de longitud, el N50, la calidad media y el porcentaje >Q10: son los datos crudos de la tabla de lecturas de la bitácora.
 
-Reporte conjunto con MultiQC
-bash
+### Reporte conjunto con MultiQC
+
+```bash
 multiqc 01_qc/nanoplot_crudo -o 01_qc/multiqc_crudo -n queso_demo_multiqc_crudo
+```
 
-Comentario:
+> **Comentario:**
+> - `01_qc/nanoplot_crudo`: carpeta donde MultiQC busca resultados. Reconoce los archivos `*NanoStats.txt`.
+> - `-o`: carpeta de salida.
+> - `-n`: nombre del reporte (`queso_demo_multiqc_crudo.html`), que reúne las cuatro muestras en una sola tabla y en gráficos comparables.
 
-01_qc/nanoplot_crudo: carpeta donde MultiQC busca resultados. Reconoce los archivos *NanoStats.txt.
--o: carpeta de salida.
--n: nombre del reporte (queso_demo_multiqc_crudo.html), que reúne las cuatro muestras en una sola tabla y en gráficos comparables.
-Descargar con WinSCP la carpeta 01_qc y abrir los reportes en el navegador
+### Descargar con WinSCP la carpeta `01_qc` y abrir los reportes en el navegador
 
-Punto de control: En el reporte HTML de cada muestra, ubique el histograma de longitudes. ¿Dónde está el pico principal y por qué cae cerca de 1 500 pb? ¿Hay lecturas mucho más cortas o mucho más largas? ¿Qué porcentaje de lecturas supera Q10? Ese porcentaje anticipa cuántas lecturas conservará chopper.
+> **Punto de control:** En el reporte HTML de cada muestra, ubique el histograma de longitudes. ¿Dónde está el pico principal y por qué cae cerca de 1 500 pb? ¿Hay lecturas mucho más cortas o mucho más largas? ¿Qué porcentaje de lecturas supera Q10? Ese porcentaje anticipa cuántas lecturas conservará chopper.
 
-4. Filtrado por calidad y longitud con chopper
-Filtrar la muestra b41
-bash
+## 4. Filtrado por calidad y longitud con chopper
+
+### Filtrar la muestra b41
+
+```bash
 chopper -i /data/2026_1/metagenomics/metataxonomic/b41.fastq.gz -q 10 -l 1200 --maxlength 1700 --threads 10 | gzip > 02_chopper/b41.fastq.gz
 
 Kept 4042 reads out of 5598 reads
+```
 
-Comentario (comando):
+> **Comentario (comando):**
+> - `-i`: archivo de entrada. chopper lee directamente el FASTQ comprimido (`.fastq.gz`); no hace falta descomprimirlo antes.
+> - `-q 10`: conserva las lecturas con calidad media ≥ Q10, es decir, con una tasa de error media de 10 % o menos.
+> - `-l 1200 --maxlength 1700`: conserva las lecturas de 1 200 a 1 700 pb. El amplicón 27F–1492R mide ~1 500 pb; las lecturas más cortas son amplicones truncados y las más largas, concatémeros o quimeras.
+> - `--threads 10`: hilos.
+> - `| gzip > 02_chopper/b41.fastq.gz`: chopper escribe las lecturas que pasan el filtro en la salida estándar, sin comprimir. El símbolo `|` (tubería) las envía a `gzip`, que las comprime, y `>` las guarda en la carpeta `02_chopper`.
+>
+> **Comentario (resultado):** al terminar, chopper informa cuántas lecturas conservó de cuántas recibió.
 
--i: archivo de entrada. chopper lee directamente el FASTQ comprimido (.fastq.gz); no hace falta descomprimirlo antes.
--q 10: conserva las lecturas con calidad media ≥ Q10, es decir, con una tasa de error media de 10 % o menos.
--l 1200 --maxlength 1700: conserva las lecturas de 1 200 a 1 700 pb. El amplicón 27F–1492R mide ~1 500 pb; las lecturas más cortas son amplicones truncados y las más largas, concatémeros o quimeras.
---threads 10: hilos.
-| gzip > 02_chopper/b41.fastq.gz: chopper escribe las lecturas que pasan el filtro en la salida estándar, sin comprimir. El símbolo | (tubería) las envía a gzip, que las comprime, y > las guarda en la carpeta 02_chopper.
+### Filtrar la muestra b42
 
-Comentario (resultado): al terminar, chopper informa cuántas lecturas conservó de cuántas recibió.
-
-Filtrar la muestra b42
-bash
+```bash
 chopper -i /data/2026_1/metagenomics/metataxonomic/b42.fastq.gz -q 10 -l 1200 --maxlength 1700 --threads 10 | gzip > 02_chopper/b42.fastq.gz
 
 Kept 4723 reads out of 6758 reads
-Filtrar la muestra b49
-bash
+```
+
+### Filtrar la muestra b49
+
+```bash
 chopper -i /data/2026_1/metagenomics/metataxonomic/b49.fastq.gz -q 10 -l 1200 --maxlength 1700 --threads 10 | gzip > 02_chopper/b49.fastq.gz
 
 Kept 3481 reads out of 5121 reads
-Filtrar la muestra b50
-bash
+```
+
+### Filtrar la muestra b50
+
+```bash
 chopper -i /data/2026_1/metagenomics/metataxonomic/b50.fastq.gz -q 10 -l 1200 --maxlength 1700 --threads 10 | gzip > 02_chopper/b50.fastq.gz
 
 Kept 3163 reads out of 4983 reads
-Estadísticas de las lecturas filtradas con seqkit
-bash
+```
+
+### Estadísticas de las lecturas filtradas con seqkit
+
+```bash
 seqkit stats -a -T -j 10 02_chopper/*.fastq.gz > 01_qc/seqkit_filtrado.tsv
+```
 
-Comentario:
+> **Comentario:**
+> - `02_chopper/*.fastq.gz`: el asterisco incluye todos los FASTQ de la carpeta, es decir, las cuatro muestras filtradas.
+> - `-a`: estadísticas completas (N50, cuartiles, calidad media).
+> - `-T`: salida separada por tabuladores.
+> - `-j 10`: hilos.
+> - `> 01_qc/seqkit_filtrado.tsv`: guarda la tabla en un archivo.
 
-02_chopper/*.fastq.gz: el asterisco incluye todos los FASTQ de la carpeta, es decir, las cuatro muestras filtradas.
--a: estadísticas completas (N50, cuartiles, calidad media).
--T: salida separada por tabuladores.
--j 10: hilos.
-> 01_qc/seqkit_filtrado.tsv: guarda la tabla en un archivo.
-bash
+```bash
 awk -F'\t' -v OFS='\t' 'NR==1{for(i=1;i<=NF;i++) c[$i]=i} {sub(/.*\//,"",$1); print $1, $c["num_seqs"], $c["avg_len"], $c["min_len"], $c["max_len"], $c["N50"], $c["AvgQual"]}' 01_qc/seqkit_filtrado.tsv | column -t
 
 file          num_seqs  avg_len  min_len  max_len  N50   AvgQual
@@ -365,31 +427,35 @@ b41.fastq.gz  4042      1465.4   1200     1700     1497  18.03
 b42.fastq.gz  4723      1438.2   1201     1699     1459  18.24
 b49.fastq.gz  3481      1453.2   1200     1693     1473  18.14
 b50.fastq.gz  3163      1456.0   1200     1692     1495  18.06
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** `awk` lee la línea 1 (`NR==1`) y guarda la posición de cada columna según su nombre; así funciona aunque otra versión de seqkit cambie el orden de las columnas. `sub(/.*\//,"",$1)` borra la ruta y deja solo el nombre del archivo. `column -t` alinea las columnas.
+> - **Resultado:** `num_seqs` es el número de lecturas filtradas. `min_len` y `max_len` deben quedar dentro de 1 200–1 700 pb, y `AvgQual` debe ser mayor que la `Mean read quality` de NanoPlot.
 
-Comando: awk lee la línea 1 (NR==1) y guarda la posición de cada columna según su nombre; así funciona aunque otra versión de seqkit cambie el orden de las columnas. sub(/.*\//,"",$1) borra la ruta y deja solo el nombre del archivo. column -t alinea las columnas.
-Resultado: num_seqs es el número de lecturas filtradas. min_len y max_len deben quedar dentro de 1 200–1 700 pb, y AvgQual debe ser mayor que la Mean read quality de NanoPlot.
+> **Punto de control:** Con el número de lecturas del reporte `_NanoStats.txt` (crudas) y de seqkit (filtradas), calcule el porcentaje de lecturas que conservó cada muestra. ¿Qué muestra perdió más? Revise su histograma de NanoPlot: ¿la pérdida se debió sobre todo a la longitud o a la calidad?
 
-Punto de control: Con el número de lecturas del reporte _NanoStats.txt (crudas) y de seqkit (filtradas), calcule el porcentaje de lecturas que conservó cada muestra. ¿Qué muestra perdió más? Revise su histograma de NanoPlot: ¿la pérdida se debió sobre todo a la longitud o a la calidad?
+## 5. Asignación taxonómica con EMU
 
-5. Asignación taxonómica con EMU
-bash
+```bash
 conda activate metataxonomic
 
 emu --version
+```
 
-Comentario: activa el entorno donde está instalado EMU y muestra su versión. Anótela para la bitácora.
+> **Comentario:** activa el entorno donde está instalado EMU y muestra su versión. Anótela para la bitácora.
 
-bash
+```bash
 ls /data/db/emu/emu/
 
 species_taxid.fasta  taxonomy.tsv
+```
 
-Comentario: la base EMU default tiene dos archivos: species_taxid.fasta, con las secuencias de referencia (cada encabezado empieza con el identificador taxonómico del NCBI, tax_id), y taxonomy.tsv, con el linaje de cada tax_id.
+> **Comentario:** la base EMU default tiene dos archivos: `species_taxid.fasta`, con las secuencias de referencia (cada encabezado empieza con el identificador taxonómico del NCBI, *tax_id*), y `taxonomy.tsv`, con el linaje de cada tax_id.
 
-Clasificar la muestra b41
-bash
+### Clasificar la muestra b41
+
+```bash
 emu abundance --type map-ont --db /data/db/emu/emu/ --threads 10 --keep-counts --output-unclassified --output-dir 03_emu --output-basename b41 02_chopper/b41.fastq.gz
 
 [M::mm_idx_gen::1.566*1.28] collected minimizers
@@ -409,53 +475,60 @@ Filtered 0 alignments below min-pid (0%) threshold.
 Mapped read count: 4042
 Number of EM iterations: 21
 Unclassified mapped read count: 20
+```
 
-Comentario (comando):
+> **Comentario (comando):**
+> - `--type map-ont`: preset de minimap2 para lecturas Nanopore.
+> - `--db`: carpeta de la base de referencia.
+> - `--threads 10`: hilos.
+> - `--keep-counts`: añade la columna `estimated counts`, con el número de lecturas estimado para cada taxón. MicrobiomeAnalyst necesita conteos, no porcentajes.
+> - `--output-unclassified`: guarda en FASTQ las lecturas que EMU no asigna a ningún taxón, en tres archivos: las que no se alinearon (`_unmapped.fastq`), las que se alinearon pero EMU descartó por sus filtros de alineamiento (`_filtered_mapped.fastq`) y las que se alinearon a taxones eliminados por el umbral de abundancia (`_unclassified_mapped.fastq`).
+> - `--output-dir 03_emu`: carpeta de salida.
+> - `--output-basename b41`: prefijo de los archivos de salida (`b41_rel-abundance.tsv`). Sin esta opción, EMU usa el nombre completo del FASTQ, y ese nombre pasaría a ser el de la muestra en la tabla final.
+> - `02_chopper/b41.fastq.gz`: lecturas filtradas de la muestra (último argumento).
+>
+> **Comentario (algoritmo):** EMU alinea cada lectura con minimap2 y guarda todas sus alineaciones posibles, no solo la mejor. Luego estima, de forma iterativa (esperanza-maximización), qué abundancia de cada especie explica mejor el conjunto de alineaciones. Al final descarta los taxones con abundancia menor que el umbral (`--min-abundance`, 0,0001 por defecto) y reparte sus lecturas entre los demás.
 
---type map-ont: preset de minimap2 para lecturas Nanopore.
---db: carpeta de la base de referencia.
---threads 10: hilos.
---keep-counts: añade la columna estimated counts, con el número de lecturas estimado para cada taxón. MicrobiomeAnalyst necesita conteos, no porcentajes.
---output-unclassified: guarda en FASTQ las lecturas que EMU no asigna a ningún taxón, en tres archivos: las que no se alinearon (_unmapped.fastq), las que se alinearon pero EMU descartó por sus filtros de alineamiento (_filtered_mapped.fastq) y las que se alinearon a taxones eliminados por el umbral de abundancia (_unclassified_mapped.fastq).
---output-dir 03_emu: carpeta de salida.
---output-basename b41: prefijo de los archivos de salida (b41_rel-abundance.tsv). Sin esta opción, EMU usa el nombre completo del FASTQ, y ese nombre pasaría a ser el de la muestra en la tabla final.
-02_chopper/b41.fastq.gz: lecturas filtradas de la muestra (último argumento).
+> **Comentario (resultado):** EMU muestra los mensajes en pantalla mientras trabaja; el *prompt* vuelve cuando termina (unos minutos por muestra). La salida tiene dos partes.
+>
+> *Mensajes de minimap2* (líneas que empiezan con `[M::`), el alineador que EMU ejecuta internamente:
+> - `loaded/built the index for 49243 target sequence(s)`: minimap2 indexó las 49 243 secuencias 16S de la base EMU default. `kmer size: 15` es el largo de las semillas (*minimizers*) con que busca coincidencias, y `total length: 74133434`, las bases de la base de referencia (~74 Mb).
+> - `mapped ... sequences`: número de lecturas que minimap2 procesó; debe ser igual al que dejó chopper (`num_seqs` de seqkit).
+> - `CMD: minimap2 -ax map-ont -t 10 -N 50 -p .9 ...`: el comando exacto que lanzó EMU. `-a` escribe el alineamiento en formato SAM; `-N 50` conserva hasta 50 alineamientos secundarios por lectura, y `-p .9` solo los que tienen un puntaje de al menos 90 % del mejor. EMU necesita esos alineamientos alternativos: una lectura de 16S suele parecerse a varias especies del mismo género. El SAM (`b41_emu_alignments.sam`) es temporal y EMU lo borra al terminar.
+> - `Real time`, `CPU` y `Peak RSS`: tiempo real que tardó, tiempo total de CPU y memoria RAM máxima usada. El tiempo de CPU es cerca de 10 veces el real porque los 10 hilos trabajaron en paralelo.
+>
+> *Resumen de EMU* (últimas líneas):
+> - `Unmapped read count: 0`: lecturas sin ningún alineamiento contra la base. Se guardan en `b41_unmapped.fastq`.
+> - `Filtered read count`, `Filtered 0 alignments outside aligned query length bounds` y `Filtered 0 alignments below min-pid (0%)`: EMU puede descartar alineamientos por su longitud o por su porcentaje de identidad. Con los valores por defecto estos filtros no se aplican, por eso todos son 0 y `b41_filtered_mapped.fastq` queda vacío.
+> - `Mapped read count`: lecturas con al menos un alineamiento, que entran al algoritmo EM. Junto con `Unmapped read count`, debe sumar las lecturas de `mapped ... sequences`. EMU cuenta las lecturas por su nombre (ID); si un FASTQ tuviera lecturas repetidas, cada nombre se contaría una sola vez y este número quedaría por debajo de lo esperado.
+> - `Number of EM iterations`: vueltas que dio el algoritmo de esperanza-maximización hasta que las abundancias dejaron de cambiar (convergencia).
+> - `Unclassified mapped read count`: lecturas que se alinearon, pero solo con especies que al final quedaron por debajo del umbral de abundancia (`--min-abundance`, 0,0001). No se asignan a ningún taxón y se guardan en `b41_unclassified_mapped.fastq`.
+>
+> Si EMU falla (por ejemplo, por falta de memoria o una ruta mal escrita), el error aparece al final de esta salida. Revísela antes de pasar a la siguiente muestra.
 
-Comentario (algoritmo): EMU alinea cada lectura con minimap2 y guarda todas sus alineaciones posibles, no solo la mejor. Luego estima, de forma iterativa (esperanza-maximización), qué abundancia de cada especie explica mejor el conjunto de alineaciones. Al final descarta los taxones con abundancia menor que el umbral (--min-abundance, 0,0001 por defecto) y reparte sus lecturas entre los demás.
+### Clasificar la muestra b42
 
-Comentario (resultado): EMU muestra los mensajes en pantalla mientras trabaja; el prompt vuelve cuando termina (unos minutos por muestra). La salida tiene dos partes.
-
-Mensajes de minimap2 (líneas que empiezan con [M::), el alineador que EMU ejecuta internamente:
-
-loaded/built the index for 49243 target sequence(s): minimap2 indexó las 49 243 secuencias 16S de la base EMU default. kmer size: 15 es el largo de las semillas (minimizers) con que busca coincidencias, y total length: 74133434, las bases de la base de referencia (~74 Mb).
-mapped ... sequences: número de lecturas que minimap2 procesó; debe ser igual al que dejó chopper (num_seqs de seqkit).
-CMD: minimap2 -ax map-ont -t 10 -N 50 -p .9 ...: el comando exacto que lanzó EMU. -a escribe el alineamiento en formato SAM; -N 50 conserva hasta 50 alineamientos secundarios por lectura, y -p .9 solo los que tienen un puntaje de al menos 90 % del mejor. EMU necesita esos alineamientos alternativos: una lectura de 16S suele parecerse a varias especies del mismo género. El SAM (b41_emu_alignments.sam) es temporal y EMU lo borra al terminar.
-Real time, CPU y Peak RSS: tiempo real que tardó, tiempo total de CPU y memoria RAM máxima usada. El tiempo de CPU es cerca de 10 veces el real porque los 10 hilos trabajaron en paralelo.
-
-Resumen de EMU (últimas líneas):
-
-Unmapped read count: 0: lecturas sin ningún alineamiento contra la base. Se guardan en b41_unmapped.fastq.
-Filtered read count, Filtered 0 alignments outside aligned query length bounds y Filtered 0 alignments below min-pid (0%): EMU puede descartar alineamientos por su longitud o por su porcentaje de identidad. Con los valores por defecto estos filtros no se aplican, por eso todos son 0 y b41_filtered_mapped.fastq queda vacío.
-Mapped read count: lecturas con al menos un alineamiento, que entran al algoritmo EM. Junto con Unmapped read count, debe sumar las lecturas de mapped ... sequences. EMU cuenta las lecturas por su nombre (ID); si un FASTQ tuviera lecturas repetidas, cada nombre se contaría una sola vez y este número quedaría por debajo de lo esperado.
-Number of EM iterations: vueltas que dio el algoritmo de esperanza-maximización hasta que las abundancias dejaron de cambiar (convergencia).
-Unclassified mapped read count: lecturas que se alinearon, pero solo con especies que al final quedaron por debajo del umbral de abundancia (--min-abundance, 0,0001). No se asignan a ningún taxón y se guardan en b41_unclassified_mapped.fastq.
-
-Si EMU falla (por ejemplo, por falta de memoria o una ruta mal escrita), el error aparece al final de esta salida. Revísela antes de pasar a la siguiente muestra.
-
-Clasificar la muestra b42
-bash
+```bash
 emu abundance --type map-ont --db /data/db/emu/emu/ --threads 10 --keep-counts --output-unclassified --output-dir 03_emu --output-basename b42 02_chopper/b42.fastq.gz
+```
 
-Comentario: el mismo comando; cambian el prefijo y el archivo de entrada. Revise en la salida las líneas Mapped read count y Unclassified mapped read count antes de pasar a la siguiente muestra.
+> **Comentario:** el mismo comando; cambian el prefijo y el archivo de entrada. Revise en la salida las líneas `Mapped read count` y `Unclassified mapped read count` antes de pasar a la siguiente muestra.
 
-Clasificar la muestra b49
-bash
+### Clasificar la muestra b49
+
+```bash
 emu abundance --type map-ont --db /data/db/emu/emu/ --threads 10 --keep-counts --output-unclassified --output-dir 03_emu --output-basename b49 02_chopper/b49.fastq.gz
-Clasificar la muestra b50
-bash
+```
+
+### Clasificar la muestra b50
+
+```bash
 emu abundance --type map-ont --db /data/db/emu/emu/ --threads 10 --keep-counts --output-unclassified --output-dir 03_emu --output-basename b50 02_chopper/b50.fastq.gz
-Revisar la salida de una muestra
-bash
+```
+
+### Revisar la salida de una muestra
+
+```bash
 ls -lh 03_emu
 
 -rw-rw-r-- 1 fguzman fguzman    0 nov 20 18:30 b41_filtered_mapped.fastq
@@ -476,12 +549,13 @@ ls -lh 03_emu
 -rw-rw-r-- 1 fguzman fguzman    0 nov 20 18:34 b50_unmapped.fastq
 drwxrwxr-x 2 fguzman fguzman 4,0K nov 20 17:49 threshold
 drwxrwxr-x 2 fguzman fguzman 4,0K nov 20 17:49 unclassified_reads
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** `ls -lh` lista el contenido de la carpeta con el tamaño de cada archivo.
+> - **Resultado:** por cada muestra hay una tabla de abundancias (`_rel-abundance.tsv`) y los tres FASTQ de lecturas no asignadas que genera `--output-unclassified`. Los archivos de 0 bytes están vacíos: en estas muestras ninguna lectura quedó sin alinear (`_unmapped`) ni fue descartada por los filtros (`_filtered_mapped`). Solo `_unclassified_mapped` tiene lecturas: las que se alinearon a especies eliminadas por el umbral de abundancia. Su tamaño crece con el número de lecturas: b49, la muestra con más especies raras, tiene el más grande.
 
-Comando: ls -lh lista el contenido de la carpeta con el tamaño de cada archivo.
-Resultado: por cada muestra hay una tabla de abundancias (_rel-abundance.tsv) y los tres FASTQ de lecturas no asignadas que genera --output-unclassified. Los archivos de 0 bytes están vacíos: en estas muestras ninguna lectura quedó sin alinear (_unmapped) ni fue descartada por los filtros (_filtered_mapped). Solo _unclassified_mapped tiene lecturas: las que se alinearon a especies eliminadas por el umbral de abundancia. Su tamaño crece con el número de lecturas: b49, la muestra con más especies raras, tiene el más grande.
-bash
+```bash
 head -n 10 03_emu/b41_rel-abundance.tsv | cut -f1-4
 
 tax_id  abundance       species genus
@@ -494,27 +568,31 @@ tax_id  abundance       species genus
 unmapped        0.0
 mapped_filtered 0.0
 mapped_unclassified     0.0
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** `head -n 10` muestra el encabezado y los taxones; `cut -f1-4` muestra solo las cuatro primeras columnas.
+> - **Resultado:** `tax_id`, identificador del NCBI; `abundance`, abundancia relativa (fracción entre 0 y 1); y `species`, `genus`, etc., el linaje. Más a la derecha está `estimated counts`. En b41, *Streptococcus thermophilus* (41,6 %) y *Lactococcus lactis* (14,1 %), dos bacterias de cultivo iniciador, conviven con *Staphylococcus sciuri* (25,7 %) y *Aerococcus urinaeequi* (13,4 %).
+> - Las tres últimas filas no son taxones: `unmapped`, `mapped_filtered` y `mapped_unclassified` resumen las lecturas no asignadas. Su `abundance` es 0 porque la abundancia relativa se calcula solo sobre las lecturas clasificadas; el número de lecturas de cada una aparece en la columna `estimated counts` (por ejemplo, 20 en `mapped_unclassified`, el mismo valor de `Unclassified mapped read count`).
 
-Comando: head -n 10 muestra el encabezado y los taxones; cut -f1-4 muestra solo las cuatro primeras columnas.
-Resultado: tax_id, identificador del NCBI; abundance, abundancia relativa (fracción entre 0 y 1); y species, genus, etc., el linaje. Más a la derecha está estimated counts. En b41, Streptococcus thermophilus (41,6 %) y Lactococcus lactis (14,1 %), dos bacterias de cultivo iniciador, conviven con Staphylococcus sciuri (25,7 %) y Aerococcus urinaeequi (13,4 %).
-Las tres últimas filas no son taxones: unmapped, mapped_filtered y mapped_unclassified resumen las lecturas no asignadas. Su abundance es 0 porque la abundancia relativa se calcula solo sobre las lecturas clasificadas; el número de lecturas de cada una aparece en la columna estimated counts (por ejemplo, 20 en mapped_unclassified, el mismo valor de Unclassified mapped read count).
-Ordenar la salida
-bash
+### Ordenar la salida
+
+```bash
 mv 03_emu/*_rel-abundance-threshold-*.tsv 03_emu/threshold/ 2>/dev/null
 
 mv 03_emu/*_unmapped.fastq 03_emu/*_filtered_mapped.fastq 03_emu/*_unclassified_mapped.fastq 03_emu/unclassified_reads/
 
 gzip 03_emu/unclassified_reads/*.fastq
+```
 
-Comentario:
+> **Comentario:**
+> - Las carpetas `threshold/` y `unclassified_reads/` se crearon en la sección 2.
+> - `emu combine-outputs` une todos los archivos de la carpeta cuyo nombre contiene `rel-abundance`. Si EMU escribió tablas con umbral (`_rel-abundance-threshold-*.tsv`), se tratarían como muestras extra; por eso se mueven a `threshold/`. `2>/dev/null` oculta el mensaje de error si no existen.
+> - Los tres FASTQ de lecturas no asignadas se mueven a `unclassified_reads/` y se comprimen con `gzip`. Así en `03_emu` quedan solo las tablas.
 
-Las carpetas threshold/ y unclassified_reads/ se crearon en la sección 2.
-emu combine-outputs une todos los archivos de la carpeta cuyo nombre contiene rel-abundance. Si EMU escribió tablas con umbral (_rel-abundance-threshold-*.tsv), se tratarían como muestras extra; por eso se mueven a threshold/. 2>/dev/null oculta el mensaje de error si no existen.
-Los tres FASTQ de lecturas no asignadas se mueven a unclassified_reads/ y se comprimen con gzip. Así en 03_emu quedan solo las tablas.
-Cuantificar las lecturas no clasificadas
-bash
+### Cuantificar las lecturas no clasificadas
+
+```bash
 conda activate quality
 
 seqkit stats -T 03_emu/unclassified_reads/*.fastq.gz | cut -f1,4 | column -t
@@ -528,18 +606,21 @@ file                                                        num_seqs
 03_emu/unclassified_reads/b49_unmapped.fastq.gz             0
 03_emu/unclassified_reads/b50_unclassified_mapped.fastq.gz  36
 03_emu/unclassified_reads/b50_unmapped.fastq.gz             0
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** seqkit está en el entorno `quality`, así que se activa un momento. `*.fastq.gz` incluye los tres tipos de archivo de las cuatro muestras; `cut -f1,4` deja solo el nombre del archivo y el número de lecturas.
+> - **Resultado:** ninguna lectura quedó sin alinear (`_unmapped`) ni fue filtrada (`_filtered_mapped`). Las únicas lecturas no asignadas son las de `_unclassified_mapped`: entre 8 (b42) y 69 (b49), menos del 2 % de las lecturas filtradas de cada muestra. La base EMU default tiene bien representadas a las bacterias lácticas, así que casi todas las lecturas de queso encuentran una referencia. b49 tiene más lecturas no asignadas porque su comunidad es más diversa y tiene más especies raras, que caen por debajo del umbral de abundancia.
 
-Comando: seqkit está en el entorno quality, así que se activa un momento. *.fastq.gz incluye los tres tipos de archivo de las cuatro muestras; cut -f1,4 deja solo el nombre del archivo y el número de lecturas.
-Resultado: ninguna lectura quedó sin alinear (_unmapped) ni fue filtrada (_filtered_mapped). Las únicas lecturas no asignadas son las de _unclassified_mapped: entre 8 (b42) y 69 (b49), menos del 2 % de las lecturas filtradas de cada muestra. La base EMU default tiene bien representadas a las bacterias lácticas, así que casi todas las lecturas de queso encuentran una referencia. b49 tiene más lecturas no asignadas porque su comunidad es más diversa y tiene más especies raras, que caen por debajo del umbral de abundancia.
-bash
+```bash
 conda activate metataxonomic
+```
 
-Comentario: vuelve al entorno de EMU para el paso siguiente.
+> **Comentario:** vuelve al entorno de EMU para el paso siguiente.
 
-Combinar las muestras en una sola tabla
-bash
+### Combinar las muestras en una sola tabla
+
+```bash
 cd 03_emu
 
 emu combine-outputs . tax_id --counts
@@ -549,14 +630,15 @@ emu combine-outputs . tax_id
 emu combine-outputs . genus
 
 cd ..
+```
 
-Comentario:
+> **Comentario:**
+> - `combine-outputs <carpeta> <rango>`: une las tablas de todas las muestras en una sola, con una columna por muestra.
+> - `tax_id --counts`: tabla de conteos estimados por especie (`emu-combined-tax_id-counts.tsv`). **Es la que se convierte a BIOM.**
+> - `tax_id` sin `--counts`: la misma tabla en abundancia relativa (`emu-combined-tax_id.tsv`).
+> - `genus`: abundancia relativa agrupada por género (`emu-combined-genus.tsv`); sirve para revisar rápidamente los géneros dominantes.
 
-combine-outputs <carpeta> <rango>: une las tablas de todas las muestras en una sola, con una columna por muestra.
-tax_id --counts: tabla de conteos estimados por especie (emu-combined-tax_id-counts.tsv). Es la que se convierte a BIOM.
-tax_id sin --counts: la misma tabla en abundancia relativa (emu-combined-tax_id.tsv).
-genus: abundancia relativa agrupada por género (emu-combined-genus.tsv); sirve para revisar rápidamente los géneros dominantes.
-bash
+```bash
 head -n 1 03_emu/emu-combined-tax_id-counts.tsv | tr '\t' '\n' | cat -n
 
      1  tax_id
@@ -571,12 +653,13 @@ head -n 1 03_emu/emu-combined-tax_id-counts.tsv | tr '\t' '\n' | cat -n
     10  b49
     11  b41
     12  b50
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** toma el encabezado, `tr '\t' '\n'` pone cada columna en una línea y `cat -n` las numera.
+> - **Resultado:** primero vienen el tax_id y los rangos taxonómicos, de especie a superreino; luego, una columna por muestra con sus conteos. El orden exacto de los rangos puede variar con la versión de EMU; el paso siguiente busca las columnas por su nombre.
 
-Comando: toma el encabezado, tr '\t' '\n' pone cada columna en una línea y cat -n las numera.
-Resultado: primero vienen el tax_id y los rangos taxonómicos, de especie a superreino; luego, una columna por muestra con sus conteos. El orden exacto de los rangos puede variar con la versión de EMU; el paso siguiente busca las columnas por su nombre.
-bash
+```bash
 LC_ALL=C awk -F'\t' -v OFS='\t' 'NR==1{for(i=1;i<=NF;i++) if($i ~ /^(b|barcode)[0-9]+$/) s[++n]=i; l="genus" OFS "media"; for(j=1;j<=n;j++) l=l OFS $s[j]; print l; next} {t=0; l=""; for(j=1;j<=n;j++){v=($s[j]=="") ? 0 : $s[j]*100; t+=v; l=l OFS sprintf("%.1f",v)} if(t>0) print (($1=="") ? "Sin_genero" : $1) OFS sprintf("%.1f",t/n) l}' 03_emu/emu-combined-genus.tsv | (read h; echo "$h"; LC_ALL=C sort -t$'\t' -k2,2gr | head -n 10) | column -t
 
 genus             media  b42   b49   b41   b50
@@ -590,48 +673,54 @@ Leuconostoc       0.6    0.0   2.2   0.0   0.0
 Lactobacillus     0.4    0.0   0.4   0.0   1.1
 Raoultella        0.3    0.0   1.0   0.0   0.0
 Aeromonas         0.2    0.0   0.7   0.0   0.0
+```
 
-Comentario:
+> **Comentario:**
+> - **Comando:** en `emu-combined-genus.tsv`, después del género vienen los rangos superiores (familia, orden...) y al final las muestras, en el orden en que `combine-outputs` las leyó (b42, b49, b41, b50). `awk` hace cuatro cosas:
+>   - en el encabezado (`NR==1`), ubica las columnas cuyo nombre es una muestra (`b41` o `barcode73`) y escribe un encabezado nuevo con `genus`, `media` y las muestras;
+>   - en cada género, convierte la abundancia relativa a porcentaje (`* 100`, con un decimal) y pone 0 donde la celda está vacía, es decir, donde el género no se detectó en esa muestra;
+>   - calcula la abundancia media del género en las cuatro muestras (`media`) y la pone en la segunda columna;
+>   - omite las filas que suman 0. Así desaparece la fila sin género que `combine-outputs` arma con `unmapped`, `mapped_filtered` y `mapped_unclassified`, que en abundancia relativa valen 0. Si una especie no tuviera género asignado, aparecería como `Sin_genero`.
+> - `(read h; echo "$h"; ...)` separa el encabezado para que no entre al ordenamiento; `sort -k2,2gr` ordena por la media, como número y de mayor a menor; `head -n 10` deja los diez géneros más abundantes.
+> - `LC_ALL=C` va delante de `awk` y de `sort`. El servidor está configurado en español, que usa la coma como separador decimal: sin `LC_ALL=C`, los dos programas leen `0.69` como `0`, `awk` descarta todas las filas por sumar 0 y solo se imprime el encabezado.
+> - Rellenar las celdas vacías con 0 también es necesario para `column -t`: si una celda está vacía, `column` la salta y los valores de las columnas siguientes se corren a la izquierda, debajo de la muestra equivocada.
+> - **Resultado:** porcentaje de las lecturas de cada muestra asignado a cada género. *Streptococcus* y *Lactococcus*, los géneros de los cultivos iniciadores, suman más del 55 % en las cuatro muestras y casi el 100 % en b42 y b50. Los quesos de Arequipa difieren entre sí: b41 tiene además *Staphylococcus* (30,6 %) y *Aerococcus* (13,4 %), mientras que b42 solo tiene los dos géneros lácticos. En Junín, b49 es el queso más diverso, con *Chryseobacterium*, *Enterococcus*, *Leuconostoc*, *Raoultella* y *Aeromonas* en baja abundancia.
 
-Comando: en emu-combined-genus.tsv, después del género vienen los rangos superiores (familia, orden...) y al final las muestras, en el orden en que combine-outputs las leyó (b42, b49, b41, b50). awk hace cuatro cosas:
-en el encabezado (NR==1), ubica las columnas cuyo nombre es una muestra (b41 o barcode73) y escribe un encabezado nuevo con genus, media y las muestras;
-en cada género, convierte la abundancia relativa a porcentaje (* 100, con un decimal) y pone 0 donde la celda está vacía, es decir, donde el género no se detectó en esa muestra;
-calcula la abundancia media del género en las cuatro muestras (media) y la pone en la segunda columna;
-omite las filas que suman 0. Así desaparece la fila sin género que combine-outputs arma con unmapped, mapped_filtered y mapped_unclassified, que en abundancia relativa valen 0. Si una especie no tuviera género asignado, aparecería como Sin_genero.
-(read h; echo "$h"; ...) separa el encabezado para que no entre al ordenamiento; sort -k2,2gr ordena por la media, como número y de mayor a menor; head -n 10 deja los diez géneros más abundantes.
-LC_ALL=C va delante de awk y de sort. El servidor está configurado en español, que usa la coma como separador decimal: sin LC_ALL=C, los dos programas leen 0.69 como 0, awk descarta todas las filas por sumar 0 y solo se imprime el encabezado.
-Rellenar las celdas vacías con 0 también es necesario para column -t: si una celda está vacía, column la salta y los valores de las columnas siguientes se corren a la izquierda, debajo de la muestra equivocada.
-Resultado: porcentaje de las lecturas de cada muestra asignado a cada género. Streptococcus y Lactococcus, los géneros de los cultivos iniciadores, suman más del 55 % en las cuatro muestras y casi el 100 % en b42 y b50. Los quesos de Arequipa difieren entre sí: b41 tiene además Staphylococcus (30,6 %) y Aerococcus (13,4 %), mientras que b42 solo tiene los dos géneros lácticos. En Junín, b49 es el queso más diverso, con Chryseobacterium, Enterococcus, Leuconostoc, Raoultella y Aeromonas en baja abundancia.
+> **Punto de control:** ¿Cuántos taxones (filas) tiene la tabla combinada? ¿Qué especie domina en cada muestra? ¿Coincide la especie dominante entre los dos quesos de un mismo departamento?
 
-Punto de control: ¿Cuántos taxones (filas) tiene la tabla combinada? ¿Qué especie domina en cada muestra? ¿Coincide la especie dominante entre los dos quesos de un mismo departamento?
+## 6. Construcción del archivo BIOM
 
-6. Construcción del archivo BIOM
-Copiar el script de conversión
-bash
+### Copiar el script de conversión
+
+```bash
 cp /data/2026_2/metagenomics/metataxonomic/data/emu_a_otu.awk 04_ma/
+```
 
-Comentario: copia en la carpeta 04_ma el script awk que convierte la tabla de conteos de EMU en una tabla OTU con taxonomía.
+> **Comentario:** copia en la carpeta `04_ma` el script `awk` que convierte la tabla de conteos de EMU en una tabla OTU con taxonomía.
 
-bash
+```bash
 cat 04_ma/emu_a_otu.awk
+```
 
-Comentario:
+> **Comentario:**
+> - `cat` muestra el contenido del script.
+> - Qué hace el script, línea por línea:
+>   - `BEGIN`: define el tabulador como separador, la lista de nombres de columnas taxonómicas y los prefijos de cada rango (`k`, `p`, `c`, `o`, `f`, `g`).
+>   - `NR == 1`: en el encabezado, guarda la posición de cada columna y considera muestras a todas las que no son taxonómicas. Escribe el nuevo encabezado: `#OTU ID`, las muestras y `taxonomy`.
+>   - `$col["tax_id"] !~ /^[0-9]+$/ { next }`: omite las filas cuyo tax_id no es un número. Son las filas `unmapped`, `mapped_filtered` y `mapped_unclassified` que EMU añade con `--keep-counts`: cuentan lecturas no asignadas, no taxones. Así las lecturas no asignadas no entran al BIOM ni a los gráficos de MicrobiomeAnalyst.
+>   - Bloque final: redondea los conteos a enteros (`int(x + 0.5)`), pone 0 donde la especie no se detectó y omite las especies que suman 0. Luego arma el linaje con prefijos de rango (`k__Bacteria; p__Firmicutes; ...; s__Lactococcus lactis`), el formato de Greengenes que MicrobiomeAnalyst reconoce.
+>   - Si un rango está vacío, lo completa con el último rango conocido: `g__Planctomycetes_sin_genero`, `f__Burkholderiales_sin_familia`. Son especies que EMU sí clasificó, pero que en la taxonomía del NCBI no tienen ese rango (cepas sin cultivar como *Planctomycetes bacterium Pan265* o linajes candidatos como *Candidatus Saccharibacteria*). Sin este paso, MicrobiomeAnalyst las agruparía como `Not_Assigned` y podrían confundirse con lecturas no clasificadas. En la demo de quesos no hay rangos vacíos; en las muestras de suelo, sí.
+> - Los conteos de EMU son estimaciones con decimales; MicrobiomeAnalyst y las pruebas de abundancia diferencial necesitan enteros.
 
-cat muestra el contenido del script.
-Qué hace el script, línea por línea:
-BEGIN: define el tabulador como separador, la lista de nombres de columnas taxonómicas y los prefijos de cada rango (k, p, c, o, f, g).
-NR == 1: en el encabezado, guarda la posición de cada columna y considera muestras a todas las que no son taxonómicas. Escribe el nuevo encabezado: #OTU ID, las muestras y taxonomy.
-$col["tax_id"] !~ /^[0-9]+$/ { next }: omite las filas cuyo tax_id no es un número. Son las filas unmapped, mapped_filtered y mapped_unclassified que EMU añade con --keep-counts: cuentan lecturas no asignadas, no taxones. Así las lecturas no asignadas no entran al BIOM ni a los gráficos de MicrobiomeAnalyst.
-Bloque final: redondea los conteos a enteros (int(x + 0.5)), pone 0 donde la especie no se detectó y omite las especies que suman 0. Luego arma el linaje con prefijos de rango (k__Bacteria; p__Firmicutes; ...; s__Lactococcus lactis), el formato de Greengenes que MicrobiomeAnalyst reconoce.
-Si un rango está vacío, lo completa con el último rango conocido: g__Planctomycetes_sin_genero, f__Burkholderiales_sin_familia. Son especies que EMU sí clasificó, pero que en la taxonomía del NCBI no tienen ese rango (cepas sin cultivar como Planctomycetes bacterium Pan265 o linajes candidatos como Candidatus Saccharibacteria). Sin este paso, MicrobiomeAnalyst las agruparía como Not_Assigned y podrían confundirse con lecturas no clasificadas. En la demo de quesos no hay rangos vacíos; en las muestras de suelo, sí.
-Los conteos de EMU son estimaciones con decimales; MicrobiomeAnalyst y las pruebas de abundancia diferencial necesitan enteros.
-Generar la tabla OTU
-bash
+### Generar la tabla OTU
+
+```bash
 LC_ALL=C awk -f 04_ma/emu_a_otu.awk 03_emu/emu-combined-tax_id-counts.tsv > 04_ma/queso_demo_otu_table.tsv
+```
 
-Comentario: -f indica a awk que lea el programa desde el archivo. La salida es la tabla OTU con taxonomía. LC_ALL=C hace que awk lea el punto como separador decimal: con la configuración en español, 12.67 se leería como 12 y los conteos se truncarían en lugar de redondearse.
+> **Comentario:** `-f` indica a `awk` que lea el programa desde el archivo. La salida es la tabla OTU con taxonomía. `LC_ALL=C` hace que `awk` lea el punto como separador decimal: con la configuración en español, `12.67` se leería como `12` y los conteos se truncarían en lugar de redondearse.
 
-bash
+```bash
 head -n 10 04_ma/queso_demo_otu_table.tsv | cut -c1-150
 
 #OTU ID	b42	b49	b41	b50	taxonomy
@@ -644,23 +733,26 @@ head -n 10 04_ma/queso_demo_otu_table.tsv | cut -c1-150
 1343	0	18	0	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Streptococcaceae; g__Streptococcus; s__Streptococcus vestibularis
 1348	0	12	0	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Streptococcaceae; g__Streptococcus; s__Streptococcus parauberis
 1351	0	166	0	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Enterococcaceae; g__Enterococcus; s__Enterococcus faecalis
+```
 
-Comentario: muestra las primeras filas, recortadas a 150 caracteres. La primera columna es el tax_id; luego vienen los conteos enteros de cada muestra, en el orden de la tabla de EMU (b42, b49, b41, b50), y al final la columna taxonomy con los siete rangos. Por ejemplo, Chryseobacterium lactis (tax_id 1241981) solo aparece en b49, con 15 lecturas.
+> **Comentario:** muestra las primeras filas, recortadas a 150 caracteres. La primera columna es el tax_id; luego vienen los conteos enteros de cada muestra, en el orden de la tabla de EMU (b42, b49, b41, b50), y al final la columna `taxonomy` con los siete rangos. Por ejemplo, *Chryseobacterium lactis* (tax_id 1241981) solo aparece en b49, con 15 lecturas.
 
-Convertir la tabla a BIOM
-bash
+### Convertir la tabla a BIOM
+
+```bash
 conda activate qiime2-amplicon-2024.10
 
 biom convert -i 04_ma/queso_demo_otu_table.tsv -o 04_ma/queso_demo_emu.biom --table-type="OTU table" --to-json --process-obs-metadata taxonomy
+```
 
-Comentario:
+> **Comentario:**
+> - `conda activate qiime2-amplicon-2024.10`: el comando `biom` está en el entorno de QIIME 2 que usó en la semana 12.
+> - `-i`: tabla OTU de entrada; `-o`: archivo BIOM de salida.
+> - `--table-type="OTU table"`: tipo de tabla.
+> - `--to-json`: escribe el BIOM en formato JSON (versión 1.0), que MicrobiomeAnalyst lee sin problemas.
+> - `--process-obs-metadata taxonomy`: separa la columna `taxonomy` por los punto y coma y la guarda como una lista ordenada de rangos para cada observación.
 
-conda activate qiime2-amplicon-2024.10: el comando biom está en el entorno de QIIME 2 que usó en la semana 12.
--i: tabla OTU de entrada; -o: archivo BIOM de salida.
---table-type="OTU table": tipo de tabla.
---to-json: escribe el BIOM en formato JSON (versión 1.0), que MicrobiomeAnalyst lee sin problemas.
---process-obs-metadata taxonomy: separa la columna taxonomy por los punto y coma y la guarda como una lista ordenada de rangos para cada observación.
-bash
+```bash
 biom summarize-table -i 04_ma/queso_demo_emu.biom | head -n 12
 
 Num samples: 4
@@ -675,280 +767,309 @@ Counts/sample summary:
  Mean: 3.819,250
  Std. dev.: 610,112
  Sample Metadata Categories: None provided
+```
 
-Comentario:
+> **Comentario:**
+> - **Resultado:** la tabla tiene **4 muestras** y **25 especies** (`Num observations`), el mismo número de filas de la tabla OTU sin el encabezado (`tail -n +2 04_ma/queso_demo_otu_table.tsv | wc -l`).
+> - Los números aparecen con punto como separador de miles y coma decimal por la configuración en español del servidor: `15.277` son 15 277 lecturas y `3.127,000`, 3 127.
+> - `Total count` (15 277) es la suma de lecturas clasificadas de las cuatro muestras. Es algo menor que la suma de las lecturas filtradas (15 409): faltan las 133 lecturas `mapped_unclassified`, que el script excluye, y el efecto del redondeo de los conteos.
+> - `Table density` (0,32) indica que solo el 32 % de las celdas tiene un valor distinto de 0: la mayoría de las especies aparece en una sola muestra.
+> - `Counts/sample summary`: la muestra con menos lecturas clasificadas tiene 3 127 (b50) y la que tiene más, 4 715 (b42).
 
-Resultado: la tabla tiene 4 muestras y 25 especies (Num observations), el mismo número de filas de la tabla OTU sin el encabezado (tail -n +2 04_ma/queso_demo_otu_table.tsv | wc -l).
-Los números aparecen con punto como separador de miles y coma decimal por la configuración en español del servidor: 15.277 son 15 277 lecturas y 3.127,000, 3 127.
-Total count (15 277) es la suma de lecturas clasificadas de las cuatro muestras. Es algo menor que la suma de las lecturas filtradas (15 409): faltan las 133 lecturas mapped_unclassified, que el script excluye, y el efecto del redondeo de los conteos.
-Table density (0,32) indica que solo el 32 % de las celdas tiene un valor distinto de 0: la mayoría de las especies aparece en una sola muestra.
-Counts/sample summary: la muestra con menos lecturas clasificadas tiene 3 127 (b50) y la que tiene más, 4 715 (b42).
-bash
+```bash
 cp metadata_MA.txt 04_ma/
+```
 
-Comentario: deja la metadata junto al BIOM para descargar ambos de una vez.
+> **Comentario:** deja la metadata junto al BIOM para descargar ambos de una vez.
 
-Descargar con WinSCP la carpeta 04_ma
-7. Análisis en MicrobiomeAnalyst
+### Descargar con WinSCP la carpeta `04_ma`
 
-Importante: use el servidor oficial, https://www.microbiomeanalyst.ca
+## 7. Análisis en MicrobiomeAnalyst
+
+> **Importante:** use el servidor oficial, https://www.microbiomeanalyst.ca
 
 <img width="2897" height="1424" alt="image" src="https://github.com/user-attachments/assets/02382555-3ba5-42d1-a688-6be9fe08dada" />
-7.1 Carga de los datos
 
-Entre a Marker Data Profiling y cargue los archivos:
+### 7.1 Carga de los datos
 
-Data format: BIOM. Seleccione queso_demo_emu.biom.
-Taxonomy labels: Greengenes, porque el linaje usa los prefijos k__, p__, ... s__.
-Metadata file: metadata_MA.txt.
-Phylogenetic tree: no se carga. EMU no genera secuencias representativas, así que no hay árbol: UniFrac y la diversidad filogenética no están disponibles.
-<img width="2116" height="1132" alt="image" src="https://github.com/user-attachments/assets/1ebd2711-f179-4261-a1b2-1eeb3ca41f0d" /> <img width="1915" height="1294" alt="image" src="https://github.com/user-attachments/assets/b32da939-1d2c-41a1-8f5b-c53b669b720e" />
+Entre a **Marker Data Profiling** y cargue los archivos:
 
-Interpretación:
+- **Data format:** BIOM. Seleccione `queso_demo_emu.biom`.
+- **Taxonomy labels:** Greengenes, porque el linaje usa los prefijos `k__`, `p__`, ... `s__`.
+- **Metadata file:** `metadata_MA.txt`.
+- **Phylogenetic tree:** no se carga. EMU no genera secuencias representativas, así que no hay árbol: UniFrac y la diversidad filogenética no están disponibles.
 
-La tabla resume la carga: 4 muestras en la metadata, 4 en la tabla OTU y 4 nombres coincidentes. Si algún nombre no coincidiera (por ejemplo, B41 en lugar de b41), esa muestra quedaría fuera del análisis.
-El gráfico muestra las lecturas clasificadas de cada muestra (eje Y) y la media de las cuatro (línea azul punteada, ~3 820). Los quesos de Arequipa quedan por encima de la media (b42: 4 715; b41: 4 023) y los de Junín, por debajo (b49: 3 412; b50: 3 127).
-La muestra más profunda tiene 1,5 veces las lecturas de la menos profunda. MicrobiomeAnalyst recomienda rarefiar cuando la diferencia supera unas 10 veces, así que aquí no hace falta.
+<img width="2116" height="1132" alt="image" src="https://github.com/user-attachments/assets/1ebd2711-f179-4261-a1b2-1eeb3ca41f0d" />
 
-Comentario: en Data Integrity Check verifique que se reconozcan 4 muestras, 25 taxones (el mismo número que en biom summarize-table) y la variable departamento con dos niveles (Arequipa y Junin). En los menús de los análisis deben aparecer todos los rangos, de Phylum a Species.
+<img width="1915" height="1294" alt="image" src="https://github.com/user-attachments/assets/b32da939-1d2c-41a1-8f5b-c53b669b720e" />
+
+> **Interpretación:**
+> - La tabla resume la carga: 4 muestras en la metadata, 4 en la tabla OTU y 4 nombres coincidentes. Si algún nombre no coincidiera (por ejemplo, `B41` en lugar de `b41`), esa muestra quedaría fuera del análisis.
+> - El gráfico muestra las lecturas clasificadas de cada muestra (eje Y) y la media de las cuatro (línea azul punteada, ~3 820). Los quesos de Arequipa quedan por encima de la media (b42: 4 715; b41: 4 023) y los de Junín, por debajo (b49: 3 412; b50: 3 127).
+> - La muestra más profunda tiene 1,5 veces las lecturas de la menos profunda. MicrobiomeAnalyst recomienda rarefiar cuando la diferencia supera unas 10 veces, así que aquí no hace falta.
+
+> **Comentario:** en **Data Integrity Check** verifique que se reconozcan 4 muestras, 25 taxones (el mismo número que en `biom summarize-table`) y la variable `departamento` con dos niveles (Arequipa y Junin). En los menús de los análisis deben aparecer todos los rangos, de *Phylum* a *Species*.
 
 <img width="2282" height="1262" alt="image" src="https://github.com/user-attachments/assets/37881e93-68a3-4234-8b86-8ece5e68fc57" />
 
-Interpretación:
+> **Interpretación:**
+> - `OTU number (Post-processing counts/Original counts): 25/25`: las 25 especies del BIOM pasaron la revisión. `OTU annotation: Greengenes` confirma que la taxonomía se leyó con los prefijos `k__` a `s__`.
+> - `Is any singleton: No`: ninguna especie tiene una sola lectura. Es lo esperado con EMU, que descarta los taxones por debajo de su umbral de abundancia.
+> - Con *Singleton: None* no se elimina nada en este paso. Si se marcara *One sample occurrence*, se perderían las especies que aparecen en una sola muestra, que en esta demo son la mayoría.
 
-OTU number (Post-processing counts/Original counts): 25/25: las 25 especies del BIOM pasaron la revisión. OTU annotation: Greengenes confirma que la taxonomía se leyó con los prefijos k__ a s__.
-Is any singleton: No: ninguna especie tiene una sola lectura. Es lo esperado con EMU, que descarta los taxones por debajo de su umbral de abundancia.
-Con Singleton: None no se elimina nada en este paso. Si se marcara One sample occurrence, se perderían las especies que aparecen en una sola muestra, que en esta demo son la mayoría.
-7.2 Filtrado y normalización
-Paso	Parámetro	Valor recomendado	Motivo
-Data Filtering	Low count filter	Mínimo 4 lecturas, prevalencia 20 %	Con 4 muestras, 20 % equivale a estar presente en al menos 1 muestra
-Data Filtering	Low variance filter	IQR 10 % (por defecto)	Elimina taxones casi constantes, que no aportan a la comparación
-Normalization	Data rarefying	Do not rarefy	EMU ya descarta los taxones raros; rarefiar elimina lecturas reales
-Normalization	Data scaling	Total sum scaling (TSS)	Convierte los conteos en proporciones por muestra
-Normalization	Data transformation	None	
-<img width="2289" height="1279" alt="image" src="https://github.com/user-attachments/assets/adf1f955-0e66-400c-8235-0353b376a7b7" /> <img width="2282" height="1231" alt="image" src="https://github.com/user-attachments/assets/87a0c774-5b7b-4a34-af00-323f50271bc6" />
 
-Comentario: EMU nunca reporta taxones con muy pocas lecturas, por el umbral de abundancia y la redistribución del algoritmo EM. Por eso la tabla no tiene singletons y casi ningún taxón cae en el filtro de conteo bajo. Anote cuántos taxones quedan después de cada filtro.
+### 7.2 Filtrado y normalización
+
+| Paso | Parámetro | Valor recomendado | Motivo |
+|---|---|---|---|
+| Data Filtering | Low count filter | Mínimo 4 lecturas, prevalencia 20 % | Con 4 muestras, 20 % equivale a estar presente en al menos 1 muestra |
+| Data Filtering | Low variance filter | IQR 10 % (por defecto) | Elimina taxones casi constantes, que no aportan a la comparación |
+| Normalization | Data rarefying | Do not rarefy | EMU ya descarta los taxones raros; rarefiar elimina lecturas reales |
+| Normalization | Data scaling | Total sum scaling (TSS) | Convierte los conteos en proporciones por muestra |
+| Normalization | Data transformation | None | |
+
+<img width="2289" height="1279" alt="image" src="https://github.com/user-attachments/assets/adf1f955-0e66-400c-8235-0353b376a7b7" />
+
+<img width="2282" height="1231" alt="image" src="https://github.com/user-attachments/assets/87a0c774-5b7b-4a34-af00-323f50271bc6" />
+
+> **Comentario:** EMU nunca reporta taxones con muy pocas lecturas, por el umbral de abundancia y la redistribución del algoritmo EM. Por eso la tabla no tiene *singletons* y casi ningún taxón cae en el filtro de conteo bajo. Anote cuántos taxones quedan después de cada filtro.
 
 <img width="1799" height="1275" alt="image" src="https://github.com/user-attachments/assets/1fe2745c-4412-42d3-ba34-d21533804a75" />
 
-Interpretación: el menú Analysis Overview agrupa los análisis en tres bloques: exploración visual (barras, gráfico circular, curva de rarefacción, heat tree), perfil de la comunidad (diversidad alfa y beta, microbioma núcleo) y agrupamiento (heatmap, dendrograma, redes de correlación). Phylogenetic tree aparece en el menú, pero no funciona con estos datos porque no se cargó un árbol.
+> **Interpretación:** el menú *Analysis Overview* agrupa los análisis en tres bloques: exploración visual (barras, gráfico circular, curva de rarefacción, *heat tree*), perfil de la comunidad (diversidad alfa y beta, microbioma núcleo) y agrupamiento (*heatmap*, dendrograma, redes de correlación). *Phylogenetic tree* aparece en el menú, pero no funciona con estos datos porque no se cargó un árbol.
 
-7.3 Composición taxonómica
+### 7.3 Composición taxonómica
 
-Rarefaction Curve (en Visual Exploration). Muestra cuántos taxones se detectan a medida que aumenta el número de lecturas. 
+**Rarefaction Curve** (en *Visual Exploration*). Muestra cuántos taxones se detectan a medida que aumenta el número de lecturas. 
 
-<img width="1670" height="697" alt="image" src="https://github.com/user-attachments/assets/363c1cc4-8037-4b4c-bba3-ead960beb5b2" /> <img width="8948" height="5337" alt="image" src="https://github.com/user-attachments/assets/50cab29b-041f-48e7-af85-911c71da98a0" />
+<img width="1670" height="697" alt="image" src="https://github.com/user-attachments/assets/363c1cc4-8037-4b4c-bba3-ead960beb5b2" />
 
-Interpretación:
+<img width="8948" height="5337" alt="image" src="https://github.com/user-attachments/assets/50cab29b-041f-48e7-af85-911c71da98a0" />
 
-Cada línea es una muestra. El eje X es el número de lecturas submuestreadas y el eje Y, el número de especies detectadas con esas lecturas.
-b49 alcanza ~20 especies; b41, 6; b50, 4, y b42, solo 2. La riqueza de b49 es entre 3 y 10 veces la de los otros quesos.
-Todas las curvas se vuelven horizontales antes de las 1 000 lecturas. Con datos de EMU esto no prueba que se haya muestreado toda la comunidad: EMU elimina las especies raras (menos de 0,01 %) antes de que lleguen a MicrobiomeAnalyst, así que la curva no puede seguir subiendo.
+> **Interpretación:**
+> - Cada línea es una muestra. El eje X es el número de lecturas submuestreadas y el eje Y, el número de especies detectadas con esas lecturas.
+> - b49 alcanza ~20 especies; b41, 6; b50, 4, y b42, solo 2. La riqueza de b49 es entre 3 y 10 veces la de los otros quesos.
+> - Todas las curvas se vuelven horizontales antes de las 1 000 lecturas. Con datos de EMU esto no prueba que se haya muestreado toda la comunidad: EMU elimina las especies raras (menos de 0,01 %) antes de que lleguen a MicrobiomeAnalyst, así que la curva no puede seguir subiendo.
 
-Stacked Bar/Area Plot. Grafique en todos los niveles: Phylum, Class, Order, Family, Genus y Species.
+**Stacked Bar/Area Plot.** Grafique en todos los niveles: Phylum, Class, Order, Family, Genus y Species.
 
-Primero por muestra (Sample), ordenadas por departamento.
-Luego agrupadas con Merge samples to one group por departamento, para ver el perfil medio de cada grupo.
-Use Top 10 en Genus y Species; los demás taxones se agrupan como Others.
-<img width="2016" height="1057" alt="image" src="https://github.com/user-attachments/assets/fae056c1-35eb-42ed-9a47-f64e69093278" /> <img width="930" height="730" alt="image" src="https://github.com/user-attachments/assets/caf7edcd-9dda-418e-ae87-96fd5567447d" />
+- Primero por muestra (*Sample*), ordenadas por `departamento`.
+- Luego agrupadas con **Merge samples to one group** por `departamento`, para ver el perfil medio de cada grupo.
+- Use **Top 10** en Genus y Species; los demás taxones se agrupan como *Others*.
 
-Interpretación (nivel de especie, 10 especies más abundantes):
+<img width="2016" height="1057" alt="image" src="https://github.com/user-attachments/assets/fae056c1-35eb-42ed-9a47-f64e69093278" />
 
-b42 (Arequipa, sin inóculo): solo dos especies: Streptococcus thermophilus (~70 %) y Lactococcus lactis (~30 %).
-b41 (Arequipa): S. thermophilus (~42 %) y L. lactis (~14 %) comparten el queso con Staphylococcus sciuri (~26 %), Aerococcus urinaeequi (~13 %) y Staphylococcus saprophyticus (~5 %).
-b49 (Junín): la comunidad más diversa. L. lactis (~35 %) supera a S. thermophilus (~30 %), y aparecen Streptococcus suis (~14 %), Enterococcus faecalis (~5 %), Chryseobacterium bovis, S. macedonicus, S. gallolyticus y un ~9 % de especies agrupadas en Others.
-b50 (Junín): casi monoespecífico: S. thermophilus (~94 %) y L. lactis (~5 %).
-El departamento no define el perfil: b42 y b50 se parecen más entre sí, ambos dominados por las dos bacterias del cultivo iniciador, que cada uno con su par de departamento. b41 y b49 suman flora acompañante distinta en cada caso: estafilococos y Aerococcus en b41; enterococos, otros estreptococos y bacterias ambientales (Chryseobacterium, Raoultella, Aeromonas) en b49.
-Las asignaciones a especie dentro de Streptococcus deben tomarse con cautela. S. thermophilus, S. salivarius y S. vestibularis tienen un 16S casi idéntico, y una asignación como S. suis puede corresponder a otro estreptococo cercano.
+<img width="930" height="730" alt="image" src="https://github.com/user-attachments/assets/caf7edcd-9dda-418e-ae87-96fd5567447d" />
 
-Punto de control: ¿Qué filos dominan los quesos? ¿Qué especies dominan en cada departamento? Busque en la literatura si corresponden a cultivos iniciadores comerciales (Lactococcus lactis, Streptococcus thermophilus, Lactobacillus delbrueckii) o a bacterias ambientales o indicadoras de higiene (Enterobacteriaceae, Staphylococcus, Pseudomonas). Fíjese en b42, el único queso elaborado sin inóculo: ¿se parece más a su par de Arequipa o a los quesos de Junín?
+> **Interpretación (nivel de especie, 10 especies más abundantes):**
+> - **b42 (Arequipa, sin inóculo):** solo dos especies: *Streptococcus thermophilus* (~70 %) y *Lactococcus lactis* (~30 %).
+> - **b41 (Arequipa):** *S. thermophilus* (~42 %) y *L. lactis* (~14 %) comparten el queso con *Staphylococcus sciuri* (~26 %), *Aerococcus urinaeequi* (~13 %) y *Staphylococcus saprophyticus* (~5 %).
+> - **b49 (Junín):** la comunidad más diversa. *L. lactis* (~35 %) supera a *S. thermophilus* (~30 %), y aparecen *Streptococcus suis* (~14 %), *Enterococcus faecalis* (~5 %), *Chryseobacterium bovis*, *S. macedonicus*, *S. gallolyticus* y un ~9 % de especies agrupadas en *Others*.
+> - **b50 (Junín):** casi monoespecífico: *S. thermophilus* (~94 %) y *L. lactis* (~5 %).
+> - El departamento no define el perfil: b42 y b50 se parecen más entre sí, ambos dominados por las dos bacterias del cultivo iniciador, que cada uno con su par de departamento. b41 y b49 suman flora acompañante distinta en cada caso: estafilococos y *Aerococcus* en b41; enterococos, otros estreptococos y bacterias ambientales (*Chryseobacterium*, *Raoultella*, *Aeromonas*) en b49.
+> - Las asignaciones a especie dentro de *Streptococcus* deben tomarse con cautela. *S. thermophilus*, *S. salivarius* y *S. vestibularis* tienen un 16S casi idéntico, y una asignación como *S. suis* puede corresponder a otro estreptococo cercano.
 
-7.4 Microbioma núcleo y agrupamiento
+> **Punto de control:** ¿Qué filos dominan los quesos? ¿Qué especies dominan en cada departamento? Busque en la literatura si corresponden a cultivos iniciadores comerciales (*Lactococcus lactis*, *Streptococcus thermophilus*, *Lactobacillus delbrueckii*) o a bacterias ambientales o indicadoras de higiene (Enterobacteriaceae, *Staphylococcus*, *Pseudomonas*). Fíjese en b42, el único queso elaborado sin inóculo: ¿se parece más a su par de Arequipa o a los quesos de Junín?
 
-Core Microbiome. A nivel de género, con prevalencia mínima de 20 % y abundancia relativa mínima de 0,01. El gráfico muestra qué géneros están en casi todas las muestras y con qué abundancia.
+### 7.4 Microbioma núcleo y agrupamiento
 
-<img width="2312" height="851" alt="image" src="https://github.com/user-attachments/assets/4ab10308-48c9-4a88-b29e-2aae1aee09f8" /> <img width="9241" height="3562" alt="image" src="https://github.com/user-attachments/assets/c0fcfef1-5b4c-48f5-ba74-a3f51e32fafd" />
+**Core Microbiome.** A nivel de género, con prevalencia mínima de 20 % y abundancia relativa mínima de 0,01. El gráfico muestra qué géneros están en casi todas las muestras y con qué abundancia.
 
-Interpretación:
+<img width="2312" height="851" alt="image" src="https://github.com/user-attachments/assets/4ab10308-48c9-4a88-b29e-2aae1aee09f8" />
 
-El eje X es el umbral de detección (abundancia relativa mínima) y el color, la prevalencia: la fracción de muestras del grupo en las que la especie supera ese umbral. Con dos muestras por departamento, la prevalencia solo puede valer 0, 0,5 o 1.
-En los dos departamentos, S. thermophilus y L. lactis tienen prevalencia 1 (rojo oscuro): son el microbioma núcleo de los quesos. Los valores del eje X están en fracción (0,692 = 69,2 %). S. thermophilus mantiene la prevalencia 1 hasta umbrales altos (~0,4 en Arequipa y ~0,3 en Junín): supera el 30 % en todas las muestras. En Junín, L. lactis pierde la prevalencia 1 por encima de ~0,05, porque en b50 solo llega al 5 %.
-Las demás especies tienen prevalencia 0,5 (color claro): están en una sola muestra del departamento (b41 en Arequipa, b49 en Junín). No forman parte del núcleo.
+<img width="9241" height="3562" alt="image" src="https://github.com/user-attachments/assets/c0fcfef1-5b4c-48f5-ba74-a3f51e32fafd" />
 
-Heatmap. A nivel de género, con distancia euclidiana y agrupamiento de Ward. Observe si las muestras se agrupan por departamento.
+> **Interpretación:**
+> - El eje X es el umbral de detección (abundancia relativa mínima) y el color, la prevalencia: la fracción de muestras del grupo en las que la especie supera ese umbral. Con dos muestras por departamento, la prevalencia solo puede valer 0, 0,5 o 1.
+> - En los dos departamentos, *S. thermophilus* y *L. lactis* tienen prevalencia 1 (rojo oscuro): son el microbioma núcleo de los quesos. Los valores del eje X están en fracción (0,692 = 69,2 %). *S. thermophilus* mantiene la prevalencia 1 hasta umbrales altos (~0,4 en Arequipa y ~0,3 en Junín): supera el 30 % en todas las muestras. En Junín, *L. lactis* pierde la prevalencia 1 por encima de ~0,05, porque en b50 solo llega al 5 %.
+> - Las demás especies tienen prevalencia 0,5 (color claro): están en una sola muestra del departamento (b41 en Arequipa, b49 en Junín). No forman parte del núcleo.
 
-<img width="1748" height="1349" alt="image" src="https://github.com/user-attachments/assets/d22c8165-237f-4bdc-bfa2-e6dd79fbeb69" /> <img width="1000" height="1200" alt="image" src="https://github.com/user-attachments/assets/9eec4c53-402a-4bd7-b2e7-91763b25fa03" />
+**Heatmap.** A nivel de género, con distancia euclidiana y agrupamiento de Ward. Observe si las muestras se agrupan por departamento.
 
-Interpretación:
+<img width="1748" height="1349" alt="image" src="https://github.com/user-attachments/assets/d22c8165-237f-4bdc-bfa2-e6dd79fbeb69" />
 
-Cada fila es una especie y cada columna, una muestra, ordenadas por departamento. Con Autoscale features, cada fila se centra en su media y se escala por su desviación estándar: el color indica si la especie está por encima (rojo) o por debajo (azul) de su promedio en las cuatro muestras, no su abundancia absoluta. Una especie presente en una sola muestra se ve roja aunque represente menos del 1 %.
-Se distinguen tres bloques. En b49 (Junín) se concentran 17 especies exclusivas: Chryseobacterium, Leuconostoc, Enterococcus faecalis, Raoultella, Aeromonas y varios estreptococos. En b41 (Arequipa), S. sciuri, S. saprophyticus, A. urinaeequi y S. salivarius. En b50, Lactobacillus paracasei.
-S. thermophilus y L. lactis, presentes en las cuatro muestras, son las únicas filas con gradiente. S. thermophilus está sobre su media en b42 y b50, y L. lactis, en b42 y b49.
-El dendrograma de la derecha agrupa las especies que aparecen en las mismas muestras.
+<img width="1000" height="1200" alt="image" src="https://github.com/user-attachments/assets/9eec4c53-402a-4bd7-b2e7-91763b25fa03" />
 
-Dendrogram. Agrupamiento jerárquico de las muestras con distancia de Bray-Curtis.
+> **Interpretación:**
+> - Cada fila es una especie y cada columna, una muestra, ordenadas por departamento. Con *Autoscale features*, cada fila se centra en su media y se escala por su desviación estándar: el color indica si la especie está por encima (rojo) o por debajo (azul) de su promedio en las cuatro muestras, no su abundancia absoluta. Una especie presente en una sola muestra se ve roja aunque represente menos del 1 %.
+> - Se distinguen tres bloques. En b49 (Junín) se concentran 17 especies exclusivas: *Chryseobacterium*, *Leuconostoc*, *Enterococcus faecalis*, *Raoultella*, *Aeromonas* y varios estreptococos. En b41 (Arequipa), *S. sciuri*, *S. saprophyticus*, *A. urinaeequi* y *S. salivarius*. En b50, *Lactobacillus paracasei*.
+> - *S. thermophilus* y *L. lactis*, presentes en las cuatro muestras, son las únicas filas con gradiente. *S. thermophilus* está sobre su media en b42 y b50, y *L. lactis*, en b42 y b49.
+> - El dendrograma de la derecha agrupa las especies que aparecen en las mismas muestras.
 
-<img width="1390" height="676" alt="image" src="https://github.com/user-attachments/assets/b5683670-5d0c-4cf0-addf-90b098559fd6" /> <img width="5373" height="6156" alt="image" src="https://github.com/user-attachments/assets/096cdb6b-2399-42c4-9d94-8ac9446969f0" />
+**Dendrogram.** Agrupamiento jerárquico de las muestras con distancia de Bray-Curtis.
 
-Interpretación:
+<img width="1390" height="676" alt="image" src="https://github.com/user-attachments/assets/b5683670-5d0c-4cf0-addf-90b098559fd6" />
 
-El eje es la distancia de Bray-Curtis entre muestras: 0 indica comunidades idénticas y 1, sin especies en común.
-b42 y b50 se unen primero, a una distancia de ~0,22: sus comunidades son muy parecidas, dominadas por S. thermophilus y L. lactis. b41 y b49 se unen a ~0,57 y los dos grupos, a ~0,63.
-Las muestras no se agrupan por departamento: cada grupo tiene un queso de Arequipa y uno de Junín. Se separan por el tipo de comunidad: dominada por el cultivo iniciador (b42, b50) o con flora acompañante (b41, b49).
-7.5 Diversidad alfa
+<img width="5373" height="6156" alt="image" src="https://github.com/user-attachments/assets/096cdb6b-2399-42c4-9d94-8ac9446969f0" />
 
-Alpha Diversity Profiling a nivel de género y de familia, con tres métricas:
+> **Interpretación:**
+> - El eje es la distancia de Bray-Curtis entre muestras: 0 indica comunidades idénticas y 1, sin especies en común.
+> - b42 y b50 se unen primero, a una distancia de ~0,22: sus comunidades son muy parecidas, dominadas por *S. thermophilus* y *L. lactis*. b41 y b49 se unen a ~0,57 y los dos grupos, a ~0,63.
+> - Las muestras no se agrupan por departamento: cada grupo tiene un queso de Arequipa y uno de Junín. Se separan por el tipo de comunidad: dominada por el cultivo iniciador (b42, b50) o con flora acompañante (b41, b49).
 
-Métrica	Qué mide
-Observed	Riqueza: número de taxones detectados
-Shannon	Riqueza y equitatividad juntas; aumenta con más taxones repartidos de forma pareja
-Simpson	Probabilidad de que dos lecturas al azar sean de taxones distintos; es sensible a los taxones dominantes
-Statistical method: Mann-Whitney (no paramétrico).
-<img width="2229" height="626" alt="image" src="https://github.com/user-attachments/assets/46e0a50d-8560-4b39-96b0-3193cf9d6311" /> <img width="5967" height="4482" alt="image" src="https://github.com/user-attachments/assets/e152d19b-11bf-4eee-b68d-3347acabc110" />
+### 7.5 Diversidad alfa
 
-Interpretación (Observed, nivel de especie): b42 tiene 2 especies; b41, 6; b49, 20, y b50, 4. Son los mismos valores en los que se estabilizaron las curvas de rarefacción. La variación dentro de cada departamento (2 frente a 6 en Arequipa; 20 frente a 4 en Junín) es tan grande como la variación entre departamentos.
+**Alpha Diversity Profiling** a nivel de **género** y de **familia**, con tres métricas:
+
+| Métrica | Qué mide |
+|---|---|
+| Observed | Riqueza: número de taxones detectados |
+| Shannon | Riqueza y equitatividad juntas; aumenta con más taxones repartidos de forma pareja |
+| Simpson | Probabilidad de que dos lecturas al azar sean de taxones distintos; es sensible a los taxones dominantes |
+
+- **Statistical method:** Mann-Whitney (no paramétrico).
+
+<img width="2229" height="626" alt="image" src="https://github.com/user-attachments/assets/46e0a50d-8560-4b39-96b0-3193cf9d6311" />
+
+<img width="5967" height="4482" alt="image" src="https://github.com/user-attachments/assets/e152d19b-11bf-4eee-b68d-3347acabc110" />
+
+> **Interpretación (Observed, nivel de especie):** b42 tiene 2 especies; b41, 6; b49, 20, y b50, 4. Son los mismos valores en los que se estabilizaron las curvas de rarefacción. La variación dentro de cada departamento (2 frente a 6 en Arequipa; 20 frente a 4 en Junín) es tan grande como la variación entre departamentos.
 
 <img width="3948" height="3898" alt="image" src="https://github.com/user-attachments/assets/12d3618b-82c1-471d-a999-0c7ef53a0fe0" />
 
-Interpretación:
+> **Interpretación:**
+> - La caja resume las dos muestras de cada departamento; el rombo negro es la media. Arequipa tiene una media de 4 especies (rango 2–6) y Junín, de 12 (rango 4–20).
+> - Junín parece más rico, pero el resultado depende de una sola muestra: sin b49, Junín tendría la misma riqueza que Arequipa. Con dos muestras por grupo, la prueba de Mann-Whitney no puede dar p < 0,33, así que no hay evidencia de una diferencia entre departamentos.
+> - Repita con Shannon y Simpson. b50 tiene 4 especies, pero una sola concentra el 94 % de las lecturas: su equitatividad es baja y esos índices la penalizan más que Observed.
 
-La caja resume las dos muestras de cada departamento; el rombo negro es la media. Arequipa tiene una media de 4 especies (rango 2–6) y Junín, de 12 (rango 4–20).
-Junín parece más rico, pero el resultado depende de una sola muestra: sin b49, Junín tendría la misma riqueza que Arequipa. Con dos muestras por grupo, la prueba de Mann-Whitney no puede dar p < 0,33, así que no hay evidencia de una diferencia entre departamentos.
-Repita con Shannon y Simpson. b50 tiene 4 especies, pero una sola concentra el 94 % de las lecturas: su equitatividad es baja y esos índices la penalizan más que Observed.
+> **Comentario:**
+> - No use Chao1 ni ACE. Ambas estiman la riqueza no observada a partir de los *singletons* y *doubletons*, y EMU no los produce: el resultado sería igual a Observed o carecería de sentido.
+> - Con dos muestras por grupo, el valor de p más bajo que puede dar la prueba de Mann-Whitney es 0,33. Ningún resultado de la demo será "significativo"; describa la dirección de las diferencias.
 
-Comentario:
 
-No use Chao1 ni ACE. Ambas estiman la riqueza no observada a partir de los singletons y doubletons, y EMU no los produce: el resultado sería igual a Observed o carecería de sentido.
-Con dos muestras por grupo, el valor de p más bajo que puede dar la prueba de Mann-Whitney es 0,33. Ningún resultado de la demo será "significativo"; describa la dirección de las diferencias.
-7.6 Diversidad beta
+### 7.6 Diversidad beta
 
-Beta Diversity Analysis a nivel de género y de familia:
+**Beta Diversity Analysis** a nivel de **género** y de **familia**:
 
-Ordination method: PCoA y luego NMDS.
-Distance method: Bray-Curtis (abundancias) y Jaccard (presencia/ausencia).
-Color: departamento. Repita con inoculo para comparar.
-Statistical method: PERMANOVA.
-<img width="2440" height="751" alt="image" src="https://github.com/user-attachments/assets/eef5896b-cd64-47cd-a8c8-8bc4ae8a16d5" /> <img width="7168" height="4934" alt="image" src="https://github.com/user-attachments/assets/88195534-5282-46fa-8516-751c8c121bc8" />
+- **Ordination method:** PCoA y luego NMDS.
+- **Distance method:** Bray-Curtis (abundancias) y Jaccard (presencia/ausencia).
+- **Color:** `departamento`. Repita con `inoculo` para comparar.
+- **Statistical method:** PERMANOVA.
 
-Interpretación (Bray-Curtis, nivel de especie):
+<img width="2440" height="751" alt="image" src="https://github.com/user-attachments/assets/eef5896b-cd64-47cd-a8c8-8bc4ae8a16d5" />
 
-El eje 1 explica el 58,9 % de la variación y el eje 2, el 40,4 %: juntos, el 99,3 %. Con 4 muestras solo existen 3 ejes posibles, así que dos ejes casi siempre explican casi todo.
-El eje 1 separa a b49 (derecha) del resto: es el queso con la comunidad más distinta. El eje 2 separa a b41 (abajo), por sus estafilococos y Aerococcus, de b42 y b50 (arriba).
-b42 y b50 quedan cerca entre sí, aunque son de departamentos distintos. Los puntos de un mismo color no forman grupos: la composición no se ordena por departamento.
-Busque en los resultados de la PERMANOVA el R² y el valor de p. El R² indica qué fracción de la variación explica departamento; con esta disposición de puntos se espera bajo, y el p no puede ser menor que ~0,33.
+<img width="7168" height="4934" alt="image" src="https://github.com/user-attachments/assets/88195534-5282-46fa-8516-751c8c121bc8" />
 
-Comentario:
+> **Interpretación (Bray-Curtis, nivel de especie):**
+> - El eje 1 explica el 58,9 % de la variación y el eje 2, el 40,4 %: juntos, el 99,3 %. Con 4 muestras solo existen 3 ejes posibles, así que dos ejes casi siempre explican casi todo.
+> - El eje 1 separa a b49 (derecha) del resto: es el queso con la comunidad más distinta. El eje 2 separa a b41 (abajo), por sus estafilococos y *Aerococcus*, de b42 y b50 (arriba).
+> - b42 y b50 quedan cerca entre sí, aunque son de departamentos distintos. Los puntos de un mismo color no forman grupos: la composición no se ordena por departamento.
+> - Busque en los resultados de la PERMANOVA el R² y el valor de p. El R² indica qué fracción de la variación explica `departamento`; con esta disposición de puntos se espera bajo, y el p no puede ser menor que ~0,33.
 
-PCoA proyecta las distancias en ejes que explican un porcentaje de la variación (aparece en cada eje). NMDS ordena las muestras para conservar el rango de las distancias; su ajuste se mide con el stress (por debajo de 0,2 es aceptable). Con 4 muestras, NMDS puede dar stress casi 0: con tan pocos puntos el ajuste es trivial.
-Bray-Curtis pesa las especies dominantes; Jaccard trata igual a una especie rara y a una dominante. Si las muestras se separan con Jaccard pero no con Bray-Curtis, la diferencia está en los taxones minoritarios.
-Con 4 muestras solo hay 3 formas de dividirlas en dos grupos de dos. La PERMANOVA no puede dar p menor que ~0,33, aunque el R² sea alto. Reporte el R²: indica qué fracción de la variación explica departamento.
-7.7 Abundancia diferencial (exploratorio)
+> **Comentario:**
+> - **PCoA** proyecta las distancias en ejes que explican un porcentaje de la variación (aparece en cada eje). **NMDS** ordena las muestras para conservar el rango de las distancias; su ajuste se mide con el *stress* (por debajo de 0,2 es aceptable). Con 4 muestras, NMDS puede dar stress casi 0: con tan pocos puntos el ajuste es trivial.
+> - Bray-Curtis pesa las especies dominantes; Jaccard trata igual a una especie rara y a una dominante. Si las muestras se separan con Jaccard pero no con Bray-Curtis, la diferencia está en los taxones minoritarios.
+> - Con 4 muestras solo hay 3 formas de dividirlas en dos grupos de dos. La PERMANOVA no puede dar p menor que ~0,33, aunque el R² sea alto. Reporte el R²: indica qué fracción de la variación explica `departamento`.
 
-Ejecute a nivel de género, comparando departamento:
+### 7.7 Abundancia diferencial (exploratorio)
 
-LEfSe: combina una prueba de Kruskal-Wallis con un análisis discriminante lineal (LDA). Use p ajustado ≤ 0,1 y LDA ≥ 2.
-<img width="1679" height="547" alt="image" src="https://github.com/user-attachments/assets/1bfeff7c-efbd-4ec5-adbb-5401f6a1b85e" /> <img width="6702" height="5763" alt="image" src="https://github.com/user-attachments/assets/ada62b17-ea40-43f5-b81f-fd49cf8b34ba" />
+Ejecute a nivel de género, comparando `departamento`:
 
-Interpretación:
+- **LEfSe:** combina una prueba de Kruskal-Wallis con un análisis discriminante lineal (LDA). Use p ajustado ≤ 0,1 y LDA ≥ 2.
 
-Cada punto es una especie. El LDA score mide el tamaño del efecto: valores positivos indican mayor abundancia en Arequipa y negativos, en Junín. Los cuadros de la derecha muestran en qué grupo es alta (rojo) o baja (azul).
-Hacia Arequipa salen S. sciuri, S. thermophilus, L. lactis, A. urinaeequi y S. saprophyticus. Hacia Junín salen las especies de b49 (S. suis, E. faecalis, Chryseobacterium, S. macedonicus, S. gallolyticus, entre otras) y L. paracasei, de b50.
-Este gráfico no prueba diferencias. Con dos muestras por grupo, la prueba de Kruskal-Wallis no puede dar p < 0,12 aunque los grupos estén completamente separados, así que ninguna especie pasa el corte de p ajustado ≤ 0,1. Revise la tabla de resultados.
-Algunas asignaciones contradicen las barras. S. thermophilus aparece asociado a Arequipa, aunque la muestra con más S. thermophilus es b50, de Junín (94 %). Con dos réplicas, una sola muestra decide el resultado.
+<img width="1679" height="547" alt="image" src="https://github.com/user-attachments/assets/1bfeff7c-efbd-4ec5-adbb-5401f6a1b85e" />
 
-Comentario: con dos réplicas por grupo estos métodos tienen muy poca potencia y dan falsos positivos con facilidad. Úselos para aprender a leer sus gráficos (barras LDA, volcano plot), no para concluir. En la sección 8 los aplicará a sus muestras.
+<img width="6702" height="5763" alt="image" src="https://github.com/user-attachments/assets/ada62b17-ea40-43f5-b81f-fd49cf8b34ba" />
 
-7.8 Análisis que no aplican a estos datos
-Análisis	Por qué no se ejecuta
-UniFrac y diversidad filogenética de Faith	Requieren un árbol filogenético; EMU no genera ASVs ni secuencias representativas
-Predicción funcional (PICRUSt, Tax4Fun)	Requieren OTUs de referencia cerrada en Greengenes o SILVA; la taxonomía de EMU es del NCBI
-Random Forest	Necesita varias muestras por grupo para separar entrenamiento y validación
-Correlation Network (SparCC)	Estima correlaciones entre taxones; con 4 muestras no son estables
+> **Interpretación:**
+> - Cada punto es una especie. El LDA *score* mide el tamaño del efecto: valores positivos indican mayor abundancia en Arequipa y negativos, en Junín. Los cuadros de la derecha muestran en qué grupo es alta (rojo) o baja (azul).
+> - Hacia Arequipa salen *S. sciuri*, *S. thermophilus*, *L. lactis*, *A. urinaeequi* y *S. saprophyticus*. Hacia Junín salen las especies de b49 (*S. suis*, *E. faecalis*, *Chryseobacterium*, *S. macedonicus*, *S. gallolyticus*, entre otras) y *L. paracasei*, de b50.
+> - Este gráfico no prueba diferencias. Con dos muestras por grupo, la prueba de Kruskal-Wallis no puede dar p < 0,12 aunque los grupos estén completamente separados, así que ninguna especie pasa el corte de p ajustado ≤ 0,1. Revise la tabla de resultados.
+> - Algunas asignaciones contradicen las barras. *S. thermophilus* aparece asociado a Arequipa, aunque la muestra con más *S. thermophilus* es b50, de Junín (94 %). Con dos réplicas, una sola muestra decide el resultado.
 
-Punto de control: Descargue cada figura con el botón de exportación (PNG o SVG) y guarde también la tabla de resultados de cada análisis. Las figuras de género y familia de diversidad alfa y beta forman parte de los resultados de la bitácora.
+> **Comentario:** con dos réplicas por grupo estos métodos tienen muy poca potencia y dan falsos positivos con facilidad. Úselos para aprender a leer sus gráficos (barras LDA, *volcano plot*), no para concluir. En la sección 8 los aplicará a sus muestras.
 
-8. Análisis de las muestras de su grupo
+### 7.8 Análisis que no aplican a estos datos
 
-Este semestre se secuenciaron muestras de suelo de dos proyectos: el suelo de lomas bajo Gorgonidium y el suelo sin la planta (control), y la rizosfera del arándano andino de Áncash. Cada grupo procesa sus cuatro barcodes hasta EMU. Luego comparte sus resultados de EMU con otro grupo y analiza en MicrobiomeAnalyst las 8 muestras del par.
+| Análisis | Por qué no se ejecuta |
+|---|---|
+| UniFrac y diversidad filogenética de Faith | Requieren un árbol filogenético; EMU no genera ASVs ni secuencias representativas |
+| Predicción funcional (PICRUSt, Tax4Fun) | Requieren OTUs de referencia cerrada en Greengenes o SILVA; la taxonomía de EMU es del NCBI |
+| Random Forest | Necesita varias muestras por grupo para separar entrenamiento y validación |
+| Correlation Network (SparCC) | Estima correlaciones entre taxones; con 4 muestras no son estables |
 
-Grupo	Barcodes	Muestras	Par
-1	barcode93, barcode94, barcode95, barcode96	Lomas, punto P1: C1, M3, M2, M1	G1 + G4
-4	barcode81, barcode82, barcode83, barcode84	Lomas, punto P2: C1, M3, M2, M1	G1 + G4
-3	barcode85, barcode86, barcode87, barcode88	Lomas, punto P1: C2, M6, M5, M4	G3 + G5
-5	barcode77, barcode78, barcode79, barcode80	Lomas, punto P2: M6, M5, M4, C2	G3 + G5
-2	barcode89, barcode90, barcode91, barcode92	Arándano, Cordillera Negra	G2 + G6
-6	barcode73, barcode74, barcode75, barcode76	Arándano, Cordillera Blanca	G2 + G6
+> **Punto de control:** Descargue cada figura con el botón de exportación (PNG o SVG) y guarde también la tabla de resultados de cada análisis. Las figuras de género y familia de diversidad alfa y beta forman parte de los resultados de la bitácora.
 
-Comentario:
+## 8. Análisis de las muestras de su grupo
 
-En lomas, M1 a M6 son suelos bajo Gorgonidium y C1 y C2, suelos sin la planta; P1 y P2 son dos puntos de muestreo separados por ~1 km. Cada par de lomas reúne las mismas réplicas en los dos puntos (3 M + 1 C en cada uno), así que puede comparar punto (4 frente a 4) y tratamiento (6 frente a 2).
-El par de arándano compara la rizosfera de la Cordillera Negra con la de la Cordillera Blanca (4 frente a 4).
-Sus 4 barcodes
-NanoPlot, chopper, seqkit
-EMU (4 rel-abundance.tsv)
-Subir a taxonomy/grupoN
-taxonomy/ del grupo par
-Copiar sus 4rel-abundance.tsv
-emu combine-outputs (8muestras)
-emu_a_otu.awk + biomconvert
-MicrobiomeAnalyst (8muestras)
-Qué tiene que hacer su grupo
+Este semestre se secuenciaron muestras de suelo de dos proyectos: el suelo de lomas bajo *Gorgonidium* y el suelo sin la planta (control), y la rizosfera del arándano andino de Áncash. Cada grupo procesa sus cuatro barcodes hasta EMU. Luego comparte sus resultados de EMU con otro grupo y analiza en MicrobiomeAnalyst las 8 muestras del par.
 
-Esta sección no repite los comandos: aplique los mismos de la demo a sus muestras y cambie solo las rutas de entrada, los nombres de las muestras y los nombres de los archivos de salida. Como ejemplo se indica el caso del grupo 1, que forma par con el grupo 4.
+| Grupo | Barcodes | Muestras | Par |
+|---|---|---|---|
+| 1 | barcode93, barcode94, barcode95, barcode96 | Lomas, punto P1: C1, M3, M2, M1 | G1 + G4 |
+| 4 | barcode81, barcode82, barcode83, barcode84 | Lomas, punto P2: C1, M3, M2, M1 | G1 + G4 |
+| 3 | barcode85, barcode86, barcode87, barcode88 | Lomas, punto P1: C2, M6, M5, M4 | G3 + G5 |
+| 5 | barcode77, barcode78, barcode79, barcode80 | Lomas, punto P2: M6, M5, M4, C2 | G3 + G5 |
+| 2 | barcode89, barcode90, barcode91, barcode92 | Arándano, Cordillera Negra | G2 + G6 |
+| 6 | barcode73, barcode74, barcode75, barcode76 | Arándano, Cordillera Blanca | G2 + G6 |
 
-1. Prepare la carpeta de trabajo (sección 2).
+> **Comentario:**
+> - En lomas, M1 a M6 son suelos bajo *Gorgonidium* y C1 y C2, suelos sin la planta; P1 y P2 son dos puntos de muestreo separados por ~1 km. Cada par de lomas reúne las mismas réplicas en los dos puntos (3 M + 1 C en cada uno), así que puede comparar **punto** (4 frente a 4) y **tratamiento** (6 frente a 2).
+> - El par de arándano compara la rizosfera de la **Cordillera Negra** con la de la **Cordillera Blanca** (4 frente a 4).
 
-Cree la carpeta ~/metataxonomic/nanopore/trabajo/ con la misma estructura interna que demo/ (01_qc/nanoplot_crudo, 02_chopper, 03_emu/threshold, 03_emu/unclassified_reads y 04_ma) y trabaje dentro de ella.
-Copie la metadata de su par desde /data/2026_2/metagenomics/metataxonomic/data/ con el nombre metadata_MA.txt: metadata_G1_G4_MA.txt, metadata_G3_G5_MA.txt o metadata_G2_G6_MA.txt. Los dos grupos de un par usan el mismo archivo, con las 8 muestras. Revísela con cat -A.
-Columnas de lomas: codigo, grupo, tratamiento (Gorgonidium o Control) y punto (P1 o P2). Columnas de arándano: codigo, grupo, cordillera, localidad y altitud.
+```mermaid
+flowchart LR
+    A["Sus 4 barcodes"] --> B["NanoPlot, chopper, seqkit"]
+    B --> C["EMU (4 rel-abundance.tsv)"]
+    C --> D["Subir a taxonomy/grupoN"]
+    E["taxonomy/ del grupo par"] --> F["Copiar sus 4 rel-abundance.tsv"]
+    C --> G["emu combine-outputs (8 muestras)"]
+    F --> G
+    G --> H["emu_a_otu.awk + biom convert"]
+    H --> I["MicrobiomeAnalyst (8 muestras)"]
+```
 
-2. Control de calidad de sus 4 barcodes (sección 3).
+### Qué tiene que hacer su grupo
 
-Sus FASTQ están en /data/2026_2/metagenomics/metataxonomic/fastq/ (por ejemplo, barcode93.fastq.gz).
-Corra NanoPlot en cada barcode, con el prefijo barcode93_, etc., revise cada _NanoStats.txt y genere el reporte de MultiQC.
+Esta sección no repite los comandos: aplique los mismos de la demo a sus muestras y cambie solo las rutas de entrada, los nombres de las muestras y los nombres de los archivos de salida. Como ejemplo se indica el caso del **grupo 1**, que forma par con el **grupo 4**.
 
-3. Filtrado (sección 4).
+**1. Prepare la carpeta de trabajo (sección 2).**
+- Cree la carpeta `~/metataxonomic/nanopore/trabajo/` con la misma estructura interna que `demo/` (`01_qc/nanoplot_crudo`, `02_chopper`, `03_emu/threshold`, `03_emu/unclassified_reads` y `04_ma`) y trabaje dentro de ella.
+- Copie la metadata de su par desde `/data/2026_2/metagenomics/metataxonomic/data/` con el nombre `metadata_MA.txt`: `metadata_G1_G4_MA.txt`, `metadata_G3_G5_MA.txt` o `metadata_G2_G6_MA.txt`. Los dos grupos de un par usan el mismo archivo, con las 8 muestras. Revísela con `cat -A`.
+- Columnas de lomas: `codigo`, `grupo`, `tratamiento` (Gorgonidium o Control) y `punto` (P1 o P2). Columnas de arándano: `codigo`, `grupo`, `cordillera`, `localidad` y `altitud`.
 
-Filtre cada barcode con chopper, con los mismos parámetros (Q ≥ 10; 1 200–1 700 pb), y guarde la salida en 02_chopper/barcode93.fastq.gz, etc.
-Obtenga las estadísticas de las lecturas filtradas con seqkit.
+**2. Control de calidad de sus 4 barcodes (sección 3).**
+- Sus FASTQ están en `/data/2026_2/metagenomics/metataxonomic/fastq/` (por ejemplo, `barcode93.fastq.gz`).
+- Corra NanoPlot en cada barcode, con el prefijo `barcode93_`, etc., revise cada `_NanoStats.txt` y genere el reporte de MultiQC.
 
-4. Clasificación con EMU (sección 5).
+**3. Filtrado (sección 4).**
+- Filtre cada barcode con chopper, con los mismos parámetros (Q ≥ 10; 1 200–1 700 pb), y guarde la salida en `02_chopper/barcode93.fastq.gz`, etc.
+- Obtenga las estadísticas de las lecturas filtradas con seqkit.
 
-Clasifique cada barcode con EMU usando --output-basename barcode93, etc. El nombre debe coincidir exactamente con el de la metadata.
-Revise la salida de cada muestra, ordene la carpeta 03_emu y cuente las lecturas no asignadas.
+**4. Clasificación con EMU (sección 5).**
+- Clasifique cada barcode con EMU usando `--output-basename barcode93`, etc. El nombre debe coincidir exactamente con el de la metadata.
+- Revise la salida de cada muestra, ordene la carpeta `03_emu` y cuente las lecturas no asignadas.
 
-5. Comparta sus resultados con el grupo par.
+**5. Comparta sus resultados con el grupo par.**
+- Copie sus 4 archivos `_rel-abundance.tsv` a la carpeta de su grupo: `/data/2026_2/metagenomics/metataxonomic/taxonomy/grupo1/` (`grupo2`, `grupo3`...). Solo se comparten estas tablas, que tienen la taxonomía y los conteos estimados.
+- Cuando el grupo par haya subido los suyos, copie sus 4 `_rel-abundance.tsv` desde `taxonomy/grupo4/` (o la carpeta de su par) a su `03_emu`.
+- Verifique con `ls` que en `03_emu` hay **8 archivos** `_rel-abundance.tsv`.
 
-Copie sus 4 archivos _rel-abundance.tsv a la carpeta de su grupo: /data/2026_2/metagenomics/metataxonomic/taxonomy/grupo1/ (grupo2, grupo3...). Solo se comparten estas tablas, que tienen la taxonomía y los conteos estimados.
-Cuando el grupo par haya subido los suyos, copie sus 4 _rel-abundance.tsv desde taxonomy/grupo4/ (o la carpeta de su par) a su 03_emu.
-Verifique con ls que en 03_emu hay 8 archivos _rel-abundance.tsv.
+**6. Combine las 8 muestras (sección 5).**
+- Corra `emu combine-outputs` en `03_emu` y verifique que el encabezado de `emu-combined-tax_id-counts.tsv` tenga las 8 muestras.
+- Revise los géneros dominantes con el resumen de `emu-combined-genus.tsv`.
 
-6. Combine las 8 muestras (sección 5).
+**7. Archivo BIOM (sección 6).**
+- Copie `emu_a_otu.awk`, genere la tabla OTU del par (por ejemplo, `par_G1_G4_otu_table.tsv`) y conviértala a BIOM (`par_G1_G4_emu.biom`). Recuerde `LC_ALL=C` en `awk` y active el entorno `qiime2-amplicon-2024.10` para `biom`.
+- Verifique con `biom summarize-table` que el BIOM tenga **8 muestras**. Copie `metadata_MA.txt` a `04_ma`.
 
-Corra emu combine-outputs en 03_emu y verifique que el encabezado de emu-combined-tax_id-counts.tsv tenga las 8 muestras.
-Revise los géneros dominantes con el resumen de emu-combined-genus.tsv.
+**8. Análisis en MicrobiomeAnalyst (sección 7).**
+- Descargue la carpeta `04_ma`, cargue el BIOM (Taxonomy labels: Greengenes) y la metadata, y repita los análisis de la sección 7 con las variables de su par:
 
-7. Archivo BIOM (sección 6).
+| Par | Variable principal | Variable secundaria |
+|---|---|---|
+| G1 + G4, G3 + G5 (lomas) | `punto` (P1 frente a P2; 4 y 4) | `tratamiento` (Gorgonidium frente a Control; 6 y 2) |
+| G2 + G6 (arándano) | `cordillera` (Negra frente a Blanca; 4 y 4) | `localidad` |
 
-Copie emu_a_otu.awk, genere la tabla OTU del par (por ejemplo, par_G1_G4_otu_table.tsv) y conviértala a BIOM (par_G1_G4_emu.biom). Recuerde LC_ALL=C en awk y active el entorno qiime2-amplicon-2024.10 para biom.
-Verifique con biom summarize-table que el BIOM tenga 8 muestras. Copie metadata_MA.txt a 04_ma.
+> **Comentario:**
+> - Con 4 muestras por grupo, la prueba de Mann-Whitney y la PERMANOVA ya pueden dar valores de p bajos (con 4 frente a 4 hay 35 formas de dividir las muestras). Aun así, interprete los resultados con cautela.
+> - En lomas, el contraste Gorgonidium frente a Control tiene solo 2 controles. Úselo en los gráficos de composición y de diversidad beta (color por `tratamiento`), pero no para pruebas de abundancia diferencial.
+> - En la Data Filtering de la sección 7.2, la prevalencia de 20 % equivale ahora a estar presente en al menos 2 de las 8 muestras.
+> - Si cierra la terminal, vuelva a `~/metataxonomic/nanopore/trabajo` y active el entorno que corresponda: `quality` para NanoPlot, chopper y seqkit; `metataxonomic` para EMU; `qiime2-amplicon-2024.10` para `biom`.
 
-8. Análisis en MicrobiomeAnalyst (sección 7).
+### Estructura de carpetas esperada al finalizar
 
-Descargue la carpeta 04_ma, cargue el BIOM (Taxonomy labels: Greengenes) y la metadata, y repita los análisis de la sección 7 con las variables de su par:
-Par	Variable principal	Variable secundaria
-G1 + G4, G3 + G5 (lomas)	punto (P1 frente a P2; 4 y 4)	tratamiento (Gorgonidium frente a Control; 6 y 2)
-G2 + G6 (arándano)	cordillera (Negra frente a Blanca; 4 y 4)	localidad
-
-Comentario:
-
-Con 4 muestras por grupo, la prueba de Mann-Whitney y la PERMANOVA ya pueden dar valores de p bajos (con 4 frente a 4 hay 35 formas de dividir las muestras). Aun así, interprete los resultados con cautela.
-En lomas, el contraste Gorgonidium frente a Control tiene solo 2 controles. Úselo en los gráficos de composición y de diversidad beta (color por tratamiento), pero no para pruebas de abundancia diferencial.
-En la Data Filtering de la sección 7.2, la prevalencia de 20 % equivale ahora a estar presente en al menos 2 de las 8 muestras.
-Si cierra la terminal, vuelva a ~/metataxonomic/nanopore/trabajo y active el entorno que corresponda: quality para NanoPlot, chopper y seqkit; metataxonomic para EMU; qiime2-amplicon-2024.10 para biom.
-Estructura de carpetas esperada al finalizar
-bash
+```bash
 ~/metataxonomic/nanopore/
 ├── demo/                                  # Parte A (b41, b42, b49, b50)
 │   ├── metadata_MA.txt                    # Metadata para MicrobiomeAnalyst (#NAME)
@@ -988,28 +1109,48 @@ bash
         ├── par_G1_G4_otu_table.tsv
         ├── par_G1_G4_emu.biom
         └── metadata_MA.txt
-Bitácora de la práctica:
-Título
-bash
+```
+
+# Bitácora de la práctica:
+
+## Título
+
+```bash
 •	Incluir el nombre de todos los integrantes
-Objetivos
-bash
+```
+
+## Objetivos
+
+```bash
 •	Indicar cuál es el objetivo del análisis metataxonómico considerando los grupos comparados en sus muestras.
-Metodología
-bash
+```
+
+## Metodología
+
+```bash
 •	Indicar las versiones de chopper, EMU y la base de datos usada, y los parámetros de filtrado.
-Resultados
-bash
+```
+
+## Resultados
+
+```bash
 •	Flujograma de todo el pipeline realizado
 •	Tabla con el número de lecturas crudas, después de chopper y no clasificadas por EMU, por muestra
 •	Composición taxonómica en todos los niveles (barras apiladas por muestra y por grupo)
 •	Microbioma núcleo y heatmap a nivel de género
 •	Diversidad alfa (Observed, Shannon y Simpson) a nivel de género y familia
 •	Diversidad beta (PCoA y NMDS, Bray-Curtis) a nivel de género y familia, con el R² de la PERMANOVA
-Discusión
-bash
+```
+
+## Discusión
+
+```bash
 •	En un párrafo, describir lo observado en la diversidad beta y relacionarlo con los taxones dominantes de cada grupo.
 •	Mencionar las limitaciones del diseño (número de réplicas) para las pruebas estadísticas.
-Recomendaciones
-bash
+```
+
+## Recomendaciones
+
+```bash
 •	Incluir 2 recomendaciones relacionadas con el análisis metataxonómico.
+```
