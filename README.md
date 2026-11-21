@@ -839,7 +839,7 @@ Entre a **Marker Data Profiling** y cargue los archivos:
 
 ### 7.3 Composición taxonómica
 
-**Rarefaction Curve** (en *Visual Exploration*). Muestra cuántos taxones se detectan a medida que aumenta el número de lecturas. Las curvas de EMU se aplanan rápido. Eso no demuestra que el muestreo esté saturado: refleja que EMU ya eliminó los taxones raros.
+**Rarefaction Curve** (en *Visual Exploration*). Muestra cuántos taxones se detectan a medida que aumenta el número de lecturas. 
 
 <img width="1670" height="697" alt="image" src="https://github.com/user-attachments/assets/363c1cc4-8037-4b4c-bba3-ead960beb5b2" />
 
