@@ -803,7 +803,8 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 
 ### 7.3 Composición taxonómica
 
-**Rarefaction.**
+**Rarefaction Curve.** > 
+
 <img width="1670" height="697" alt="image" src="https://github.com/user-attachments/assets/363c1cc4-8037-4b4c-bba3-ead960beb5b2" />
 
 <img width="8948" height="5337" alt="image" src="https://github.com/user-attachments/assets/50cab29b-041f-48e7-af85-911c71da98a0" />
@@ -818,19 +819,27 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 
 <img width="930" height="730" alt="image" src="https://github.com/user-attachments/assets/caf7edcd-9dda-418e-ae87-96fd5567447d" />
 
-**Interactive Pie Chart.** Un gráfico por grupo a nivel de género.
-
-**Heat Tree.** Compara los dos grupos sobre el árbol taxonómico: el color de cada rama indica en qué grupo es más abundante ese taxón. Úselo para ver de un vistazo qué linajes cambian entre los quesos de Arequipa y los de Junín.
-
 > **Punto de control:** ¿Qué filos dominan los quesos? ¿Qué especies dominan en cada departamento? Busque en la literatura si corresponden a cultivos iniciadores comerciales (*Lactococcus lactis*, *Streptococcus thermophilus*, *Lactobacillus delbrueckii*) o a bacterias ambientales o indicadoras de higiene (Enterobacteriaceae, *Staphylococcus*, *Pseudomonas*). Fíjese en b42, el único queso elaborado sin inóculo: ¿se parece más a su par de Arequipa o a los quesos de Junín?
 
 ### 7.4 Microbioma núcleo y agrupamiento
 
 **Core Microbiome.** A nivel de género, con prevalencia mínima de 20 % y abundancia relativa mínima de 0,01. El gráfico muestra qué géneros están en casi todas las muestras y con qué abundancia.
 
+<img width="2312" height="851" alt="image" src="https://github.com/user-attachments/assets/4ab10308-48c9-4a88-b29e-2aae1aee09f8" />
+
+<img width="9241" height="3562" alt="image" src="https://github.com/user-attachments/assets/c0fcfef1-5b4c-48f5-ba74-a3f51e32fafd" />
+
 **Heatmap.** A nivel de género, con distancia euclidiana y agrupamiento de Ward. Observe si las muestras se agrupan por departamento.
 
+<img width="1748" height="1349" alt="image" src="https://github.com/user-attachments/assets/d22c8165-237f-4bdc-bfa2-e6dd79fbeb69" />
+
+<img width="1000" height="1200" alt="image" src="https://github.com/user-attachments/assets/9eec4c53-402a-4bd7-b2e7-91763b25fa03" />
+
 **Dendrogram.** Agrupamiento jerárquico de las muestras con distancia de Bray-Curtis.
+
+<img width="1390" height="676" alt="image" src="https://github.com/user-attachments/assets/b5683670-5d0c-4cf0-addf-90b098559fd6" />
+
+<img width="5373" height="6156" alt="image" src="https://github.com/user-attachments/assets/096cdb6b-2399-42c4-9d94-8ac9446969f0" />
 
 ### 7.5 Diversidad alfa
 
@@ -844,10 +853,16 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 
 - **Statistical method:** Mann-Whitney (no paramétrico).
 
+<img width="2229" height="626" alt="image" src="https://github.com/user-attachments/assets/46e0a50d-8560-4b39-96b0-3193cf9d6311" />
+
+<img width="5967" height="4482" alt="image" src="https://github.com/user-attachments/assets/e152d19b-11bf-4eee-b68d-3347acabc110" />
+
+<img width="3948" height="3898" alt="image" src="https://github.com/user-attachments/assets/12d3618b-82c1-471d-a999-0c7ef53a0fe0" />
+
 > **Comentario:**
 > - No use Chao1 ni ACE. Ambas estiman la riqueza no observada a partir de los *singletons* y *doubletons*, y EMU no los produce: el resultado sería igual a Observed o carecería de sentido.
 > - Con dos muestras por grupo, el valor de p más bajo que puede dar la prueba de Mann-Whitney es 0,33. Ningún resultado de la demo será "significativo"; describa la dirección de las diferencias.
-> - **Rarefaction Curve** (en *Visual Exploration*): las curvas de EMU se aplanan rápido. Eso no demuestra que el muestreo esté saturado: refleja que EMU ya eliminó los taxones raros.
+
 
 ### 7.6 Diversidad beta
 
@@ -857,6 +872,10 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 - **Distance method:** Bray-Curtis (abundancias) y Jaccard (presencia/ausencia).
 - **Color:** `departamento`. Repita con `inoculo` para comparar.
 - **Statistical method:** PERMANOVA.
+
+<img width="2440" height="751" alt="image" src="https://github.com/user-attachments/assets/eef5896b-cd64-47cd-a8c8-8bc4ae8a16d5" />
+
+<img width="7168" height="4934" alt="image" src="https://github.com/user-attachments/assets/88195534-5282-46fa-8516-751c8c121bc8" />
 
 > **Comentario:**
 > - **PCoA** proyecta las distancias en ejes que explican un porcentaje de la variación (aparece en cada eje). **NMDS** ordena las muestras para conservar el rango de las distancias; su ajuste se mide con el *stress* (por debajo de 0,2 es aceptable). Con 4 muestras, NMDS puede dar stress casi 0: con tan pocos puntos el ajuste es trivial.
@@ -868,8 +887,10 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 Ejecute a nivel de género, comparando `departamento`:
 
 - **LEfSe:** combina una prueba de Kruskal-Wallis con un análisis discriminante lineal (LDA). Use p ajustado ≤ 0,1 y LDA ≥ 2.
-- **RNAseq methods (DESeq2 o edgeR):** modelos para conteos con distribución binomial negativa.
-- **Classical univariate analysis:** Mann-Whitney taxón por taxón.
+
+<img width="1679" height="547" alt="image" src="https://github.com/user-attachments/assets/1bfeff7c-efbd-4ec5-adbb-5401f6a1b85e" />
+
+<img width="6702" height="5763" alt="image" src="https://github.com/user-attachments/assets/ada62b17-ea40-43f5-b81f-fd49cf8b34ba" />
 
 > **Comentario:** con dos réplicas por grupo estos métodos tienen muy poca potencia y dan falsos positivos con facilidad. Úselos para aprender a leer sus gráficos (barras LDA, *volcano plot*), no para concluir. En la sección 8 los aplicará a sus muestras.
 
