@@ -1,8 +1,8 @@
- # Semana 13: Análisis metataxonómico de comunidades bacterianas con datos de secuenciación Nanopore
+# Semana 13: Análisis metataxonómico de comunidades bacterianas con datos de secuenciación Nanopore
 
 ## Logro de la sesión:
 
-Al finalizar la sesión, el estudiante procesa lecturas Nanopore del gen 16S rRNA completo, asigna taxonomía a nivel de especie con EMU, construye las tablas de abundancia y taxonomía y compara la composición y la diversidad de comunidades bacterianas en MicrobiomeAnalyst: primero con quesos (demo) y luego con muestras de suelo secuenciadas por el curso.
+Al finalizar la sesión, el estudiante procesa lecturas Nanopore del gen 16S rRNA completo, asigna taxonomía a nivel de especie con EMU, construye una tabla BIOM y compara la composición y la diversidad de comunidades bacterianas en MicrobiomeAnalyst: primero con quesos (demo) y luego con muestras de suelo secuenciadas por el curso.
 
 ## Estructura de la práctica:
 
@@ -11,14 +11,14 @@ Al finalizar la sesión, el estudiante procesa lecturas Nanopore del gen 16S rRN
 3. Control de calidad de las lecturas crudas
 4. Filtrado por calidad y longitud con chopper
 5. Asignación taxonómica con EMU
-6. Tablas para MicrobiomeAnalyst
+6. Construcción del archivo BIOM
 7. Análisis en MicrobiomeAnalyst
 8. Análisis de las muestras de su grupo
 
 > **Cómo está organizada esta práctica:** se trabaja en dos partes con los mismos comandos.
 >
 > - **Parte A, demo (secciones 2 a 7).** Todos los grupos analizan cuatro quesos tipo paria del semestre 2026-1, secuenciados con el gen 16S completo (primers 27F/1492R, ~1 500 pb) en un MinION. Las cuatro muestras forman dos grupos de dos: quesos de **Arequipa** y quesos de **Junín**.
-> - **Parte B, sus muestras (sección 8).** Cada grupo procesa sus cuatro barcodes de este semestre (suelos de lomas o rizosfera de arándano) hasta EMU, sube sus clasificaciones a una carpeta compartida y copia las de su grupo par. Con las 8 muestras del par construye las tablas y las analiza en MicrobiomeAnalyst.
+> - **Parte B, sus muestras (sección 8).** Cada grupo procesa sus cuatro barcodes de este semestre (suelos de lomas o rizosfera de arándano) hasta EMU, sube sus clasificaciones a una carpeta compartida y copia las de su grupo par. Con las 8 muestras del par construye el BIOM y lo analiza en MicrobiomeAnalyst.
 >
 > En la demo, cada comando se ejecuta por separado, una muestra a la vez, para revisar el resultado de cada muestra antes de pasar a la siguiente. En la sección 8 no se repiten los comandos: se indican los pasos y cada grupo los escribe a partir de la demo.
 >
@@ -31,7 +31,7 @@ Al finalizar la sesión, el estudiante procesa lecturas Nanopore del gen 16S rRN
 > | b49 | JU01 | Junín | 15 | sí |
 > | b50 | JU02 | Junín | 30 | sí |
 >
-> La metadata (`metadata_queso_demo_MA.txt`) y el script de conversión de EMU a MicrobiomeAnalyst (`emu_a_ma.awk`) están en `/data/2026_2/metagenomics/metataxonomic/data/`; se copian de allí en las secciones 2 y 6.
+> La metadata (`metadata_queso_demo_MA.txt`) y el script de conversión a BIOM (`emu_a_otu.awk`) están en `/data/2026_2/metagenomics/metataxonomic/data/`; se copian de allí en las secciones 2 y 6.
 >
 > Con dos muestras por grupo ninguna prueba estadística puede dar p < 0,05. La demo sirve para aprender el flujo y leer los gráficos; las conclusiones se discuten como tendencias.
 
@@ -48,7 +48,8 @@ flowchart LR
         C --> D["seqkit stats (lecturas filtradas)"]
         C --> E["emu abundance (base EMU default)"]
         E --> F["emu combine-outputs (tabla de conteos)"]
-        F --> G["awk (tablas de abundancia y taxonomía)"]
+        F --> G["awk (tabla OTU con taxonomía)"]
+        G --> H["biom convert (queso_demo_emu.biom)"]
     end
 ```
 
@@ -58,7 +59,7 @@ flowchart LR
 flowchart LR
     subgraph MA["MicrobiomeAnalyst (en línea)"]
         direction LR
-        A["abundancia + taxonomía + metadata_MA.txt"] --> B["Data Integrity Check"]
+        A["queso_demo_emu.biom + metadata_MA.txt"] --> B["Data Integrity Check"]
         B --> C["Data Filtering"]
         C --> D["Normalization"]
         D --> E["Composición (barras, pie, heat tree)"]
@@ -95,6 +96,9 @@ chopper https://github.com/wdecoster/chopper
 
 EMU https://github.com/treangenlab/emu
    - **Descripción:** EMU (*Expectation-Maximization algorithm for Microbial community profiling*) alinea cada lectura con minimap2 contra una base de secuencias 16S y estima, con un algoritmo de esperanza-maximización, la abundancia de cada especie. Fue diseñado para lecturas largas con errores, como las de Nanopore, y resuelve hasta especie con el gen 16S completo.
+
+biom-format https://biom-format.org/
+   - **Descripción:** formato estándar para tablas de abundancia de microbiomas (*Biological Observation Matrix*). El comando `biom`, instalado en el entorno de QIIME 2, convierte la tabla de EMU al formato que lee MicrobiomeAnalyst.
 
 ### Bases de datos:
 
@@ -143,7 +147,7 @@ El servidor tiene 64 hilos y 180 GB de RAM, y lo usan **6 grupos a la vez**. Cad
 | 3 | NanoPlot y MultiQC | 5–10 min |
 | 4 | chopper y seqkit | 2–5 min |
 | 5 | EMU | 10–30 min |
-| 6 | Tablas para MicrobiomeAnalyst | < 1 min |
+| 6 | Tabla BIOM | < 1 min |
 
 > **Comentario:** los tiempos dependen de la carga del servidor. EMU es el paso más lento: alinea cada lectura contra toda la base de referencia.
 
@@ -173,7 +177,7 @@ mkdir -p ~/metataxonomic/nanopore/demo/01_qc/nanoplot_crudo ~/metataxonomic/nano
 
 > **Comentario:**
 > - `mkdir -p` crea todas las carpetas indicadas y las intermedias que falten (`metataxonomic`, `nanopore`, `demo`). Si alguna ya existe, por ejemplo `~/metataxonomic` desde la semana 12, no la toca y no muestra error.
-> - Cada carpeta numerada guarda la salida de un paso: `01_qc`, control de calidad; `02_chopper`, lecturas filtradas; `03_emu`, clasificación taxonómica; `04_ma`, las tablas para MicrobiomeAnalyst. La numeración sigue el orden del análisis.
+> - Cada carpeta numerada guarda la salida de un paso: `01_qc`, control de calidad; `02_chopper`, lecturas filtradas; `03_emu`, clasificación taxonómica; `04_ma`, el archivo BIOM para MicrobiomeAnalyst. La numeración sigue el orden del análisis.
 
 ```bash
 cd ~/metataxonomic/nanopore/demo
@@ -233,7 +237,7 @@ b50^IJU02^IJunin^I30^Isi$
 
 > **Comentario:**
 > - **Comando:** `cat -A` muestra los caracteres invisibles: cada tabulador aparece como `^I` y cada fin de línea como `$`.
-> - **Resultado:** cinco columnas separadas por tabuladores. MicrobiomeAnalyst exige que la primera se llame `#NAME` y que sus valores coincidan exactamente con los nombres de las muestras en la tabla de abundancias (b41, b42...). La variable que se compara es `departamento`; `maduracion` e `inoculo` sirven para explorar otros patrones en los gráficos.
+> - **Resultado:** cinco columnas separadas por tabuladores. MicrobiomeAnalyst exige que la primera se llame `#NAME` y que sus valores coincidan exactamente con los nombres de las muestras en la tabla BIOM (b41, b42...). La variable que se compara es `departamento`; `maduracion` e `inoculo` sirven para explorar otros patrones en los gráficos.
 
 ## 3. Control de calidad de las lecturas crudas
 
@@ -630,7 +634,7 @@ cd ..
 
 > **Comentario:**
 > - `combine-outputs <carpeta> <rango>`: une las tablas de todas las muestras en una sola, con una columna por muestra.
-> - `tax_id --counts`: tabla de conteos estimados por especie (`emu-combined-tax_id-counts.tsv`). **Es la que se convierte para MicrobiomeAnalyst.**
+> - `tax_id --counts`: tabla de conteos estimados por especie (`emu-combined-tax_id-counts.tsv`). **Es la que se convierte a BIOM.**
 > - `tax_id` sin `--counts`: la misma tabla en abundancia relativa (`emu-combined-tax_id.tsv`).
 > - `genus`: abundancia relativa agrupada por género (`emu-combined-genus.tsv`); sirve para revisar rápidamente los géneros dominantes.
 
@@ -684,78 +688,98 @@ Aeromonas         0.2    0.0   0.7   0.0   0.0
 
 > **Punto de control:** ¿Cuántos taxones (filas) tiene la tabla combinada? ¿Qué especie domina en cada muestra? ¿Coincide la especie dominante entre los dos quesos de un mismo departamento?
 
-## 6. Tablas para MicrobiomeAnalyst
-
-MicrobiomeAnalyst recibe la información en tres archivos de texto separados por tabuladores: una tabla de abundancias (cuántas lecturas tiene cada especie en cada muestra), una tabla de taxonomía (el linaje de cada especie, con una columna por rango) y la metadata. Al tener cada rango en su propia columna (`Kingdom` a `Species`), MicrobiomeAnalyst puede agrupar y graficar en todos los niveles taxonómicos.
+## 6. Construcción del archivo BIOM
 
 ### Copiar el script de conversión
 
 ```bash
-cp /data/2026_2/metagenomics/metataxonomic/data/emu_a_ma.awk 04_ma/
+cp /data/2026_2/metagenomics/metataxonomic/data/emu_a_otu.awk 04_ma/
 ```
 
-> **Comentario:** copia en la carpeta `04_ma` el script `awk` que convierte la tabla de conteos de EMU en las dos tablas de MicrobiomeAnalyst.
+> **Comentario:** copia en la carpeta `04_ma` el script `awk` que convierte la tabla de conteos de EMU en una tabla OTU con taxonomía.
 
 ```bash
-cat 04_ma/emu_a_ma.awk
+cat 04_ma/emu_a_otu.awk
 ```
 
 > **Comentario:**
 > - `cat` muestra el contenido del script.
-> - Qué hace el script, bloque por bloque:
->   - `function limpia(x)`: reemplaza por `_` todo carácter que no sea letra, número o guion bajo (espacios, puntos). MicrobiomeAnalyst solo acepta esos caracteres en los nombres: `Lactococcus lactis` pasa a `Lactococcus_lactis`.
+> - Qué hace el script, línea por línea:
 >   - `BEGIN`: define el tabulador como separador y la lista de nombres de columnas taxonómicas.
->   - `NR == 1`: en el encabezado, guarda la posición de cada columna y considera muestras a todas las que no son taxonómicas. Escribe el encabezado de cada tabla: `#NAME` y las muestras en la de abundancias; `#TAXONOMY` y los siete rangos en la de taxonomía.
->   - `$col["tax_id"] !~ /^[0-9]+$/ { next }`: omite las filas cuyo tax_id no es un número. Son las filas `unmapped`, `mapped_filtered` y `mapped_unclassified` que EMU añade con `--keep-counts`: cuentan lecturas no asignadas, no taxones.
->   - Bloque final: arma un identificador para cada especie (`OTU_` + tax_id), redondea los conteos a enteros (`int(x + 0.5)`), pone 0 donde la especie no se detectó y omite las especies que suman 0. Escribe la fila de conteos en la tabla de abundancias y la fila del linaje en la de taxonomía.
+>   - `NR == 1`: en el encabezado, guarda la posición de cada columna y considera muestras a todas las que no son taxonómicas. Escribe el nuevo encabezado: `#OTU ID`, las muestras y `taxonomy`.
+>   - `$col["tax_id"] !~ /^[0-9]+$/ { next }`: omite las filas cuyo tax_id no es un número. Son las filas `unmapped`, `mapped_filtered` y `mapped_unclassified` que EMU añade con `--keep-counts`: cuentan lecturas no asignadas, no taxones. Así las lecturas no asignadas no entran al BIOM ni a los gráficos de MicrobiomeAnalyst.
+>   - Bloque final: redondea los conteos a enteros (`int(x + 0.5)`), pone 0 donde la especie no se detectó y omite las especies que suman 0. Luego arma el linaje con prefijos de rango (`k__Bacteria; p__Firmicutes; ...; s__Lactococcus lactis`), el formato de Greengenes que MicrobiomeAnalyst reconoce.
 > - Los conteos de EMU son estimaciones con decimales; MicrobiomeAnalyst y las pruebas de abundancia diferencial necesitan enteros.
 
-### Generar las tablas de abundancia y taxonomía
+### Generar la tabla OTU
 
 ```bash
-LC_ALL=C awk -v abund=04_ma/queso_demo_abundancia.txt -v tax=04_ma/queso_demo_taxonomia.txt -f 04_ma/emu_a_ma.awk 03_emu/emu-combined-tax_id-counts.tsv
+LC_ALL=C awk -f 04_ma/emu_a_otu.awk 03_emu/emu-combined-tax_id-counts.tsv > 04_ma/queso_demo_otu_table.tsv
+```
+
+> **Comentario:** `-f` indica a `awk` que lea el programa desde el archivo. La salida es la tabla OTU con taxonomía. `LC_ALL=C` hace que `awk` lea el punto como separador decimal: con la configuración en español, `12.67` se leería como `12` y los conteos se truncarían en lugar de redondearse.
+
+```bash
+head -n 10 04_ma/queso_demo_otu_table.tsv | cut -c1-150
+
+#OTU ID	b42	b49	b41	b50	taxonomy
+1241981	0	15	0	0	k__Bacteria; p__Bacteroidetes; c__Flavobacteriia; o__Flavobacteriales; f__Weeksellaceae; g__Chryseobacterium; s__Chryseobacterium lac
+1245	0	13	0	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Leuconostocaceae; g__Leuconostoc; s__Leuconostoc mesenteroides
+1296	0	0	1034	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Bacillales; f__Staphylococcaceae; g__Staphylococcus; s__Staphylococcus sciuri
+1304	0	0	17	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Streptococcaceae; g__Streptococcus; s__Streptococcus salivarius
+1307	0	469	0	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Streptococcaceae; g__Streptococcus; s__Streptococcus suis
+1308	3263	1010	1672	2931	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Streptococcaceae; g__Streptococcus; s__Streptococcus thermophi
+1343	0	18	0	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Streptococcaceae; g__Streptococcus; s__Streptococcus vestibularis
+1348	0	12	0	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Streptococcaceae; g__Streptococcus; s__Streptococcus parauberis
+1351	0	166	0	0	k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Enterococcaceae; g__Enterococcus; s__Enterococcus faecalis
+```
+
+> **Comentario:** muestra las primeras filas, recortadas a 150 caracteres. La primera columna es el tax_id; luego vienen los conteos enteros de cada muestra, en el orden de la tabla de EMU (b42, b49, b41, b50), y al final la columna `taxonomy` con los siete rangos. Por ejemplo, *Chryseobacterium lactis* (tax_id 1241981) solo aparece en b49, con 15 lecturas.
+
+### Convertir la tabla a BIOM
+
+```bash
+conda activate qiime2-amplicon-2024.10
+
+biom convert -i 04_ma/queso_demo_otu_table.tsv -o 04_ma/queso_demo_emu.biom --table-type="OTU table" --to-json --process-obs-metadata taxonomy
 ```
 
 > **Comentario:**
-> - `-v abund=...` y `-v tax=...`: nombres de los dos archivos de salida. El script escribe en ellos directamente, por eso el comando no muestra nada en pantalla.
-> - `-f`: indica a `awk` que lea el programa desde el archivo.
-> - `LC_ALL=C`: hace que `awk` lea el punto como separador decimal. Con la configuración en español, `12.67` se leería como `12` y los conteos se truncarían en lugar de redondearse.
+> - `conda activate qiime2-amplicon-2024.10`: el comando `biom` está en el entorno de QIIME 2 que usó en la semana 12.
+> - `-i`: tabla OTU de entrada; `-o`: archivo BIOM de salida.
+> - `--table-type="OTU table"`: tipo de tabla.
+> - `--to-json`: escribe el BIOM en formato JSON (versión 1.0), que MicrobiomeAnalyst lee sin problemas.
+> - `--process-obs-metadata taxonomy`: separa la columna `taxonomy` por los punto y coma y la guarda como una lista ordenada de rangos para cada observación.
 
 ```bash
-head -n 3 04_ma/queso_demo_abundancia.txt
+biom summarize-table -i 04_ma/queso_demo_emu.biom | head -n 12
 
-#NAME	b42	b49	b41	b50
-OTU_1241981	0	15	0	0
-OTU_1245	0	13	0	0
+Num samples: 4
+Num observations: 25
+Total count: 15.277
+Table density (fraction of non-zero values): 0.320
+
+Counts/sample summary:
+ Min: 3.127,000
+ Max: 4.715,000
+ Median: 3.717,500
+ Mean: 3.819,250
+ Std. dev.: 610,112
+ Sample Metadata Categories: None provided
 ```
 
-> **Comentario:** la primera fila empieza con `#NAME` y lleva los nombres de las muestras, en el orden de la tabla de EMU (b42, b49, b41, b50). Cada fila siguiente es una especie, con sus conteos enteros. Por ejemplo, `OTU_1241981` (*Chryseobacterium lactis*) solo aparece en b49, con 15 lecturas.
-
-```bash
-head -n 3 04_ma/queso_demo_taxonomia.txt
-
-#TAXONOMY	Kingdom	Phylum	Class	Order	Family	Genus	Species
-OTU_1241981	Bacteria	Bacteroidetes	Flavobacteriia	Flavobacteriales	Weeksellaceae	Chryseobacterium	Chryseobacterium_lactis
-OTU_1245	Bacteria	Firmicutes	Bacilli	Lactobacillales	Leuconostocaceae	Leuconostoc	Leuconostoc_mesenteroides
-```
-
-> **Comentario:** la primera fila empieza con `#TAXONOMY` y nombra los siete rangos. Cada especie tiene el mismo identificador (`OTU_...`) que en la tabla de abundancias: así MicrobiomeAnalyst une las dos tablas. Los filos usan los nombres de la base EMU default (*Firmicutes*, *Bacteroidetes*).
-
-```bash
-wc -l 04_ma/queso_demo_abundancia.txt 04_ma/queso_demo_taxonomia.txt
-
- 26 04_ma/queso_demo_abundancia.txt
- 26 04_ma/queso_demo_taxonomia.txt
- 52 total
-```
-
-> **Comentario:** `wc -l` cuenta las líneas. Las dos tablas deben tener el mismo número: 25 especies más el encabezado.
+> **Comentario:**
+> - **Resultado:** la tabla tiene **4 muestras** y **25 especies** (`Num observations`), el mismo número de filas de la tabla OTU sin el encabezado (`tail -n +2 04_ma/queso_demo_otu_table.tsv | wc -l`).
+> - Los números aparecen con punto como separador de miles y coma decimal por la configuración en español del servidor: `15.277` son 15 277 lecturas y `3.127,000`, 3 127.
+> - `Total count` (15 277) es la suma de lecturas clasificadas de las cuatro muestras. Es algo menor que la suma de las lecturas filtradas (15 409): faltan las 133 lecturas `mapped_unclassified`, que el script excluye, y el efecto del redondeo de los conteos.
+> - `Table density` (0,32) indica que solo el 32 % de las celdas tiene un valor distinto de 0: la mayoría de las especies aparece en una sola muestra.
+> - `Counts/sample summary`: la muestra con menos lecturas clasificadas tiene 3 127 (b50) y la que tiene más, 4 715 (b42).
 
 ```bash
 cp metadata_MA.txt 04_ma/
 ```
 
-> **Comentario:** deja la metadata junto a las dos tablas para descargar los tres archivos de una vez.
+> **Comentario:** deja la metadata junto al BIOM para descargar ambos de una vez.
 
 ### Descargar con WinSCP la carpeta `04_ma`
 
@@ -767,10 +791,10 @@ cp metadata_MA.txt 04_ma/
 
 ### 7.1 Carga de los datos
 
-Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto separado por tabuladores (*Plain text*):
+Entre a **Marker Data Profiling** y cargue los archivos:
 
-- **OTU/ASV table:** `queso_demo_abundancia.txt`.
-- **Taxonomy table:** `queso_demo_taxonomia.txt`. Como la taxonomía va en un archivo aparte, con una columna por rango, en **Taxonomy labels** elija la opción para nombres no específicos (*Not specific* u *Others*).
+- **Data format:** BIOM. Seleccione `queso_demo_emu.biom`.
+- **Taxonomy labels:** Greengenes, porque el linaje usa los prefijos `k__`, `p__`, ... `s__`.
 - **Metadata file:** `metadata_MA.txt`.
 - **Phylogenetic tree:** no se carga. EMU no genera secuencias representativas, así que no hay árbol: UniFrac y la diversidad filogenética no están disponibles.
 
@@ -778,7 +802,7 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 
 <img width="1915" height="1294" alt="image" src="https://github.com/user-attachments/assets/b32da939-1d2c-41a1-8f5b-c53b669b720e" />
 
-> **Comentario:** en **Data Integrity Check** verifique que se reconozcan 4 muestras, 25 taxones y la variable `departamento` con dos niveles (Arequipa y Junin). En los menús de los análisis deben aparecer todos los rangos, de *Phylum* a *Species*.
+> **Comentario:** en **Data Integrity Check** verifique que se reconozcan 4 muestras, 25 taxones (el mismo número que en `biom summarize-table`) y la variable `departamento` con dos niveles (Arequipa y Junin). En los menús de los análisis deben aparecer todos los rangos, de *Phylum* a *Species*.
 
 <img width="2282" height="1262" alt="image" src="https://github.com/user-attachments/assets/37881e93-68a3-4234-8b86-8ece5e68fc57" />
 
@@ -803,7 +827,7 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 
 ### 7.3 Composición taxonómica
 
-**Rarefaction Curve.** > 
+**Rarefaction Curve** (en *Visual Exploration*). Muestra cuántos taxones se detectan a medida que aumenta el número de lecturas. Las curvas de EMU se aplanan rápido. Eso no demuestra que el muestreo esté saturado: refleja que EMU ya eliminó los taxones raros.
 
 <img width="1670" height="697" alt="image" src="https://github.com/user-attachments/assets/363c1cc4-8037-4b4c-bba3-ead960beb5b2" />
 
@@ -930,7 +954,7 @@ flowchart LR
     E["taxonomy/ del grupo par"] --> F["Copiar sus 4 rel-abundance.tsv"]
     C --> G["emu combine-outputs (8 muestras)"]
     F --> G
-    G --> H["emu_a_ma.awk (tablas de abundancia y taxonomía)"]
+    G --> H["emu_a_otu.awk + biom convert"]
     H --> I["MicrobiomeAnalyst (8 muestras)"]
 ```
 
@@ -964,12 +988,12 @@ Esta sección no repite los comandos: aplique los mismos de la demo a sus muestr
 - Corra `emu combine-outputs` en `03_emu` y verifique que el encabezado de `emu-combined-tax_id-counts.tsv` tenga las 8 muestras.
 - Revise los géneros dominantes con el resumen de `emu-combined-genus.tsv`.
 
-**7. Tablas para MicrobiomeAnalyst (sección 6).**
-- Copie `emu_a_ma.awk` y genere las tablas de abundancia y taxonomía del par, por ejemplo `par_G1_G4_abundancia.txt` y `par_G1_G4_taxonomia.txt`. Recuerde `LC_ALL=C`.
-- Verifique que la tabla de abundancias tenga 8 muestras y que las dos tablas tengan el mismo número de líneas. Copie `metadata_MA.txt` a `04_ma`.
+**7. Archivo BIOM (sección 6).**
+- Copie `emu_a_otu.awk`, genere la tabla OTU del par (por ejemplo, `par_G1_G4_otu_table.tsv`) y conviértala a BIOM (`par_G1_G4_emu.biom`). Recuerde `LC_ALL=C` en `awk` y active el entorno `qiime2-amplicon-2024.10` para `biom`.
+- Verifique con `biom summarize-table` que el BIOM tenga **8 muestras**. Copie `metadata_MA.txt` a `04_ma`.
 
 **8. Análisis en MicrobiomeAnalyst (sección 7).**
-- Descargue la carpeta `04_ma`, cargue los tres archivos y repita los análisis de la sección 7 con las variables de su par:
+- Descargue la carpeta `04_ma`, cargue el BIOM (Taxonomy labels: Greengenes) y la metadata, y repita los análisis de la sección 7 con las variables de su par:
 
 | Par | Variable principal | Variable secundaria |
 |---|---|---|
@@ -980,7 +1004,7 @@ Esta sección no repite los comandos: aplique los mismos de la demo a sus muestr
 > - Con 4 muestras por grupo, la prueba de Mann-Whitney y la PERMANOVA ya pueden dar valores de p bajos (con 4 frente a 4 hay 35 formas de dividir las muestras). Aun así, interprete los resultados con cautela.
 > - En lomas, el contraste Gorgonidium frente a Control tiene solo 2 controles. Úselo en los gráficos de composición y de diversidad beta (color por `tratamiento`), pero no para pruebas de abundancia diferencial.
 > - En la Data Filtering de la sección 7.2, la prevalencia de 20 % equivale ahora a estar presente en al menos 2 de las 8 muestras.
-> - Si cierra la terminal, vuelva a `~/metataxonomic/nanopore/trabajo` y active el entorno que corresponda: `quality` para NanoPlot, chopper y seqkit; `metataxonomic` para EMU.
+> - Si cierra la terminal, vuelva a `~/metataxonomic/nanopore/trabajo` y active el entorno que corresponda: `quality` para NanoPlot, chopper y seqkit; `metataxonomic` para EMU; `qiime2-amplicon-2024.10` para `biom`.
 
 ### Estructura de carpetas esperada al finalizar
 
@@ -1001,9 +1025,9 @@ Esta sección no repite los comandos: aplique los mismos de la demo a sus muestr
 │   │   ├── threshold/
 │   │   └── unclassified_reads/            # Lecturas no clasificadas (.fastq.gz)
 │   └── 04_ma/
-│       ├── emu_a_ma.awk                   # Script de conversión
-│       ├── queso_demo_abundancia.txt      # Tabla de abundancias (#NAME)
-│       ├── queso_demo_taxonomia.txt       # Tabla de taxonomía (#TAXONOMY)
+│       ├── emu_a_otu.awk                  # Script de conversión
+│       ├── queso_demo_otu_table.tsv       # Tabla OTU con taxonomía
+│       ├── queso_demo_emu.biom            # Tabla para MicrobiomeAnalyst
 │       └── metadata_MA.txt
 └── trabajo/                               # Parte B (ejemplo: grupo 1 + grupo 4)
     ├── metadata_MA.txt
@@ -1020,9 +1044,9 @@ Esta sección no repite los comandos: aplique los mismos de la demo a sus muestr
     │   ├── threshold/
     │   └── unclassified_reads/
     └── 04_ma/
-        ├── emu_a_ma.awk
-        ├── par_G1_G4_abundancia.txt
-        ├── par_G1_G4_taxonomia.txt
+        ├── emu_a_otu.awk
+        ├── par_G1_G4_otu_table.tsv
+        ├── par_G1_G4_emu.biom
         └── metadata_MA.txt
 ```
 
