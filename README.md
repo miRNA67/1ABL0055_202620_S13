@@ -774,7 +774,14 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 - **Metadata file:** `metadata_MA.txt`.
 - **Phylogenetic tree:** no se carga. EMU no genera secuencias representativas, así que no hay árbol: UniFrac y la diversidad filogenética no están disponibles.
 
+<img width="2116" height="1132" alt="image" src="https://github.com/user-attachments/assets/1ebd2711-f179-4261-a1b2-1eeb3ca41f0d" />
+
+<img width="1915" height="1294" alt="image" src="https://github.com/user-attachments/assets/b32da939-1d2c-41a1-8f5b-c53b669b720e" />
+
 > **Comentario:** en **Data Integrity Check** verifique que se reconozcan 4 muestras, 25 taxones y la variable `departamento` con dos niveles (Arequipa y Junin). En los menús de los análisis deben aparecer todos los rangos, de *Phylum* a *Species*.
+
+<img width="2282" height="1262" alt="image" src="https://github.com/user-attachments/assets/37881e93-68a3-4234-8b86-8ece5e68fc57" />
+
 
 ### 7.2 Filtrado y normalización
 
@@ -786,15 +793,30 @@ Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto s
 | Normalization | Data scaling | Total sum scaling (TSS) | Convierte los conteos en proporciones por muestra |
 | Normalization | Data transformation | None | |
 
+<img width="2289" height="1279" alt="image" src="https://github.com/user-attachments/assets/adf1f955-0e66-400c-8235-0353b376a7b7" />
+
+<img width="2282" height="1231" alt="image" src="https://github.com/user-attachments/assets/87a0c774-5b7b-4a34-af00-323f50271bc6" />
+
 > **Comentario:** EMU nunca reporta taxones con muy pocas lecturas, por el umbral de abundancia y la redistribución del algoritmo EM. Por eso la tabla no tiene *singletons* y casi ningún taxón cae en el filtro de conteo bajo. Anote cuántos taxones quedan después de cada filtro.
 
+<img width="1799" height="1275" alt="image" src="https://github.com/user-attachments/assets/1fe2745c-4412-42d3-ba34-d21533804a75" />
+
 ### 7.3 Composición taxonómica
+
+**Rarefaction.**
+<img width="1670" height="697" alt="image" src="https://github.com/user-attachments/assets/363c1cc4-8037-4b4c-bba3-ead960beb5b2" />
+
+<img width="8948" height="5337" alt="image" src="https://github.com/user-attachments/assets/50cab29b-041f-48e7-af85-911c71da98a0" />
 
 **Stacked Bar/Area Plot.** Grafique en todos los niveles: Phylum, Class, Order, Family, Genus y Species.
 
 - Primero por muestra (*Sample*), ordenadas por `departamento`.
 - Luego agrupadas con **Merge samples to one group** por `departamento`, para ver el perfil medio de cada grupo.
 - Use **Top 10** en Genus y Species; los demás taxones se agrupan como *Others*.
+
+<img width="2016" height="1057" alt="image" src="https://github.com/user-attachments/assets/fae056c1-35eb-42ed-9a47-f64e69093278" />
+
+<img width="930" height="730" alt="image" src="https://github.com/user-attachments/assets/caf7edcd-9dda-418e-ae87-96fd5567447d" />
 
 **Interactive Pie Chart.** Un gráfico por grupo a nivel de género.
 
