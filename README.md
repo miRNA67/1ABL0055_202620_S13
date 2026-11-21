@@ -763,6 +763,8 @@ cp metadata_MA.txt 04_ma/
 
 > **Importante:** use el servidor oficial, https://www.microbiomeanalyst.ca
 
+<img width="2897" height="1424" alt="image" src="https://github.com/user-attachments/assets/02382555-3ba5-42d1-a688-6be9fe08dada" />
+
 ### 7.1 Carga de los datos
 
 Entre a **Marker Data Profiling** y cargue los archivos en la opción de texto separado por tabuladores (*Plain text*):
