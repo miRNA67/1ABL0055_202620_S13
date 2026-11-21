@@ -802,9 +802,19 @@ Entre a **Marker Data Profiling** y cargue los archivos:
 
 <img width="1915" height="1294" alt="image" src="https://github.com/user-attachments/assets/b32da939-1d2c-41a1-8f5b-c53b669b720e" />
 
+> **Interpretación:**
+> - La tabla resume la carga: 4 muestras en la metadata, 4 en la tabla OTU y 4 nombres coincidentes. Si algún nombre no coincidiera (por ejemplo, `B41` en lugar de `b41`), esa muestra quedaría fuera del análisis.
+> - El gráfico muestra las lecturas clasificadas de cada muestra (eje Y) y la media de las cuatro (línea azul punteada, ~3 820). Los quesos de Arequipa quedan por encima de la media (b42: 4 715; b41: 4 023) y los de Junín, por debajo (b49: 3 412; b50: 3 127).
+> - La muestra más profunda tiene 1,5 veces las lecturas de la menos profunda. MicrobiomeAnalyst recomienda rarefiar cuando la diferencia supera unas 10 veces, así que aquí no hace falta.
+
 > **Comentario:** en **Data Integrity Check** verifique que se reconozcan 4 muestras, 25 taxones (el mismo número que en `biom summarize-table`) y la variable `departamento` con dos niveles (Arequipa y Junin). En los menús de los análisis deben aparecer todos los rangos, de *Phylum* a *Species*.
 
 <img width="2282" height="1262" alt="image" src="https://github.com/user-attachments/assets/37881e93-68a3-4234-8b86-8ece5e68fc57" />
+
+> **Interpretación:**
+> - `OTU number (Post-processing counts/Original counts): 25/25`: las 25 especies del BIOM pasaron la revisión. `OTU annotation: Greengenes` confirma que la taxonomía se leyó con los prefijos `k__` a `s__`.
+> - `Is any singleton: No`: ninguna especie tiene una sola lectura. Es lo esperado con EMU, que descarta los taxones por debajo de su umbral de abundancia.
+> - Con *Singleton: None* no se elimina nada en este paso. Si se marcara *One sample occurrence*, se perderían las especies que aparecen en una sola muestra, que en esta demo son la mayoría.
 
 
 ### 7.2 Filtrado y normalización
@@ -825,6 +835,8 @@ Entre a **Marker Data Profiling** y cargue los archivos:
 
 <img width="1799" height="1275" alt="image" src="https://github.com/user-attachments/assets/1fe2745c-4412-42d3-ba34-d21533804a75" />
 
+> **Interpretación:** el menú *Analysis Overview* agrupa los análisis en tres bloques: exploración visual (barras, gráfico circular, curva de rarefacción, *heat tree*), perfil de la comunidad (diversidad alfa y beta, microbioma núcleo) y agrupamiento (*heatmap*, dendrograma, redes de correlación). *Phylogenetic tree* aparece en el menú, pero no funciona con estos datos porque no se cargó un árbol.
+
 ### 7.3 Composición taxonómica
 
 **Rarefaction Curve** (en *Visual Exploration*). Muestra cuántos taxones se detectan a medida que aumenta el número de lecturas. Las curvas de EMU se aplanan rápido. Eso no demuestra que el muestreo esté saturado: refleja que EMU ya eliminó los taxones raros.
@@ -832,6 +844,11 @@ Entre a **Marker Data Profiling** y cargue los archivos:
 <img width="1670" height="697" alt="image" src="https://github.com/user-attachments/assets/363c1cc4-8037-4b4c-bba3-ead960beb5b2" />
 
 <img width="8948" height="5337" alt="image" src="https://github.com/user-attachments/assets/50cab29b-041f-48e7-af85-911c71da98a0" />
+
+> **Interpretación:**
+> - Cada línea es una muestra. El eje X es el número de lecturas submuestreadas y el eje Y, el número de especies detectadas con esas lecturas.
+> - b49 alcanza ~20 especies; b41, 6; b50, 4, y b42, solo 2. La riqueza de b49 es entre 3 y 10 veces la de los otros quesos.
+> - Todas las curvas se vuelven horizontales antes de las 1 000 lecturas. Con datos de EMU esto no prueba que se haya muestreado toda la comunidad: EMU elimina las especies raras (menos de 0,01 %) antes de que lleguen a MicrobiomeAnalyst, así que la curva no puede seguir subiendo.
 
 **Stacked Bar/Area Plot.** Grafique en todos los niveles: Phylum, Class, Order, Family, Genus y Species.
 
@@ -843,6 +860,14 @@ Entre a **Marker Data Profiling** y cargue los archivos:
 
 <img width="930" height="730" alt="image" src="https://github.com/user-attachments/assets/caf7edcd-9dda-418e-ae87-96fd5567447d" />
 
+> **Interpretación (nivel de especie, 10 especies más abundantes):**
+> - **b42 (Arequipa, sin inóculo):** solo dos especies: *Streptococcus thermophilus* (~70 %) y *Lactococcus lactis* (~30 %).
+> - **b41 (Arequipa):** *S. thermophilus* (~42 %) y *L. lactis* (~14 %) comparten el queso con *Staphylococcus sciuri* (~26 %), *Aerococcus urinaeequi* (~13 %) y *Staphylococcus saprophyticus* (~5 %).
+> - **b49 (Junín):** la comunidad más diversa. *L. lactis* (~35 %) supera a *S. thermophilus* (~30 %), y aparecen *Streptococcus suis* (~14 %), *Enterococcus faecalis* (~5 %), *Chryseobacterium bovis*, *S. macedonicus*, *S. gallolyticus* y un ~9 % de especies agrupadas en *Others*.
+> - **b50 (Junín):** casi monoespecífico: *S. thermophilus* (~94 %) y *L. lactis* (~5 %).
+> - El departamento no define el perfil: b42 y b50 se parecen más entre sí, ambos dominados por las dos bacterias del cultivo iniciador, que cada uno con su par de departamento. b41 y b49 suman flora acompañante distinta en cada caso: estafilococos y *Aerococcus* en b41; enterococos, otros estreptococos y bacterias ambientales (*Chryseobacterium*, *Raoultella*, *Aeromonas*) en b49.
+> - Las asignaciones a especie dentro de *Streptococcus* deben tomarse con cautela. *S. thermophilus*, *S. salivarius* y *S. vestibularis* tienen un 16S casi idéntico, y una asignación como *S. suis* puede corresponder a otro estreptococo cercano.
+
 > **Punto de control:** ¿Qué filos dominan los quesos? ¿Qué especies dominan en cada departamento? Busque en la literatura si corresponden a cultivos iniciadores comerciales (*Lactococcus lactis*, *Streptococcus thermophilus*, *Lactobacillus delbrueckii*) o a bacterias ambientales o indicadoras de higiene (Enterobacteriaceae, *Staphylococcus*, *Pseudomonas*). Fíjese en b42, el único queso elaborado sin inóculo: ¿se parece más a su par de Arequipa o a los quesos de Junín?
 
 ### 7.4 Microbioma núcleo y agrupamiento
@@ -853,17 +878,33 @@ Entre a **Marker Data Profiling** y cargue los archivos:
 
 <img width="9241" height="3562" alt="image" src="https://github.com/user-attachments/assets/c0fcfef1-5b4c-48f5-ba74-a3f51e32fafd" />
 
+> **Interpretación:**
+> - El eje X es el umbral de detección (abundancia relativa mínima) y el color, la prevalencia: la fracción de muestras del grupo en las que la especie supera ese umbral. Con dos muestras por departamento, la prevalencia solo puede valer 0, 0,5 o 1.
+> - En los dos departamentos, *S. thermophilus* y *L. lactis* tienen prevalencia 1 (rojo oscuro): son el microbioma núcleo de los quesos. Los valores del eje X están en fracción (0,692 = 69,2 %). *S. thermophilus* mantiene la prevalencia 1 hasta umbrales altos (~0,4 en Arequipa y ~0,3 en Junín): supera el 30 % en todas las muestras. En Junín, *L. lactis* pierde la prevalencia 1 por encima de ~0,05, porque en b50 solo llega al 5 %.
+> - Las demás especies tienen prevalencia 0,5 (color claro): están en una sola muestra del departamento (b41 en Arequipa, b49 en Junín). No forman parte del núcleo.
+
 **Heatmap.** A nivel de género, con distancia euclidiana y agrupamiento de Ward. Observe si las muestras se agrupan por departamento.
 
 <img width="1748" height="1349" alt="image" src="https://github.com/user-attachments/assets/d22c8165-237f-4bdc-bfa2-e6dd79fbeb69" />
 
 <img width="1000" height="1200" alt="image" src="https://github.com/user-attachments/assets/9eec4c53-402a-4bd7-b2e7-91763b25fa03" />
 
+> **Interpretación:**
+> - Cada fila es una especie y cada columna, una muestra, ordenadas por departamento. Con *Autoscale features*, cada fila se centra en su media y se escala por su desviación estándar: el color indica si la especie está por encima (rojo) o por debajo (azul) de su promedio en las cuatro muestras, no su abundancia absoluta. Una especie presente en una sola muestra se ve roja aunque represente menos del 1 %.
+> - Se distinguen tres bloques. En b49 (Junín) se concentran 17 especies exclusivas: *Chryseobacterium*, *Leuconostoc*, *Enterococcus faecalis*, *Raoultella*, *Aeromonas* y varios estreptococos. En b41 (Arequipa), *S. sciuri*, *S. saprophyticus*, *A. urinaeequi* y *S. salivarius*. En b50, *Lactobacillus paracasei*.
+> - *S. thermophilus* y *L. lactis*, presentes en las cuatro muestras, son las únicas filas con gradiente. *S. thermophilus* está sobre su media en b42 y b50, y *L. lactis*, en b42 y b49.
+> - El dendrograma de la derecha agrupa las especies que aparecen en las mismas muestras.
+
 **Dendrogram.** Agrupamiento jerárquico de las muestras con distancia de Bray-Curtis.
 
 <img width="1390" height="676" alt="image" src="https://github.com/user-attachments/assets/b5683670-5d0c-4cf0-addf-90b098559fd6" />
 
 <img width="5373" height="6156" alt="image" src="https://github.com/user-attachments/assets/096cdb6b-2399-42c4-9d94-8ac9446969f0" />
+
+> **Interpretación:**
+> - El eje es la distancia de Bray-Curtis entre muestras: 0 indica comunidades idénticas y 1, sin especies en común.
+> - b42 y b50 se unen primero, a una distancia de ~0,22: sus comunidades son muy parecidas, dominadas por *S. thermophilus* y *L. lactis*. b41 y b49 se unen a ~0,57 y los dos grupos, a ~0,63.
+> - Las muestras no se agrupan por departamento: cada grupo tiene un queso de Arequipa y uno de Junín. Se separan por el tipo de comunidad: dominada por el cultivo iniciador (b42, b50) o con flora acompañante (b41, b49).
 
 ### 7.5 Diversidad alfa
 
@@ -881,7 +922,14 @@ Entre a **Marker Data Profiling** y cargue los archivos:
 
 <img width="5967" height="4482" alt="image" src="https://github.com/user-attachments/assets/e152d19b-11bf-4eee-b68d-3347acabc110" />
 
+> **Interpretación (Observed, nivel de especie):** b42 tiene 2 especies; b41, 6; b49, 20, y b50, 4. Son los mismos valores en los que se estabilizaron las curvas de rarefacción. La variación dentro de cada departamento (2 frente a 6 en Arequipa; 20 frente a 4 en Junín) es tan grande como la variación entre departamentos.
+
 <img width="3948" height="3898" alt="image" src="https://github.com/user-attachments/assets/12d3618b-82c1-471d-a999-0c7ef53a0fe0" />
+
+> **Interpretación:**
+> - La caja resume las dos muestras de cada departamento; el rombo negro es la media. Arequipa tiene una media de 4 especies (rango 2–6) y Junín, de 12 (rango 4–20).
+> - Junín parece más rico, pero el resultado depende de una sola muestra: sin b49, Junín tendría la misma riqueza que Arequipa. Con dos muestras por grupo, la prueba de Mann-Whitney no puede dar p < 0,33, así que no hay evidencia de una diferencia entre departamentos.
+> - Repita con Shannon y Simpson. b50 tiene 4 especies, pero una sola concentra el 94 % de las lecturas: su equitatividad es baja y esos índices la penalizan más que Observed.
 
 > **Comentario:**
 > - No use Chao1 ni ACE. Ambas estiman la riqueza no observada a partir de los *singletons* y *doubletons*, y EMU no los produce: el resultado sería igual a Observed o carecería de sentido.
@@ -901,6 +949,12 @@ Entre a **Marker Data Profiling** y cargue los archivos:
 
 <img width="7168" height="4934" alt="image" src="https://github.com/user-attachments/assets/88195534-5282-46fa-8516-751c8c121bc8" />
 
+> **Interpretación (Bray-Curtis, nivel de especie):**
+> - El eje 1 explica el 58,9 % de la variación y el eje 2, el 40,4 %: juntos, el 99,3 %. Con 4 muestras solo existen 3 ejes posibles, así que dos ejes casi siempre explican casi todo.
+> - El eje 1 separa a b49 (derecha) del resto: es el queso con la comunidad más distinta. El eje 2 separa a b41 (abajo), por sus estafilococos y *Aerococcus*, de b42 y b50 (arriba).
+> - b42 y b50 quedan cerca entre sí, aunque son de departamentos distintos. Los puntos de un mismo color no forman grupos: la composición no se ordena por departamento.
+> - Busque en los resultados de la PERMANOVA el R² y el valor de p. El R² indica qué fracción de la variación explica `departamento`; con esta disposición de puntos se espera bajo, y el p no puede ser menor que ~0,33.
+
 > **Comentario:**
 > - **PCoA** proyecta las distancias en ejes que explican un porcentaje de la variación (aparece en cada eje). **NMDS** ordena las muestras para conservar el rango de las distancias; su ajuste se mide con el *stress* (por debajo de 0,2 es aceptable). Con 4 muestras, NMDS puede dar stress casi 0: con tan pocos puntos el ajuste es trivial.
 > - Bray-Curtis pesa las especies dominantes; Jaccard trata igual a una especie rara y a una dominante. Si las muestras se separan con Jaccard pero no con Bray-Curtis, la diferencia está en los taxones minoritarios.
@@ -915,6 +969,12 @@ Ejecute a nivel de género, comparando `departamento`:
 <img width="1679" height="547" alt="image" src="https://github.com/user-attachments/assets/1bfeff7c-efbd-4ec5-adbb-5401f6a1b85e" />
 
 <img width="6702" height="5763" alt="image" src="https://github.com/user-attachments/assets/ada62b17-ea40-43f5-b81f-fd49cf8b34ba" />
+
+> **Interpretación:**
+> - Cada punto es una especie. El LDA *score* mide el tamaño del efecto: valores positivos indican mayor abundancia en Arequipa y negativos, en Junín. Los cuadros de la derecha muestran en qué grupo es alta (rojo) o baja (azul).
+> - Hacia Arequipa salen *S. sciuri*, *S. thermophilus*, *L. lactis*, *A. urinaeequi* y *S. saprophyticus*. Hacia Junín salen las especies de b49 (*S. suis*, *E. faecalis*, *Chryseobacterium*, *S. macedonicus*, *S. gallolyticus*, entre otras) y *L. paracasei*, de b50.
+> - Este gráfico no prueba diferencias. Con dos muestras por grupo, la prueba de Kruskal-Wallis no puede dar p < 0,12 aunque los grupos estén completamente separados, así que ninguna especie pasa el corte de p ajustado ≤ 0,1. Revise la tabla de resultados.
+> - Algunas asignaciones contradicen las barras. *S. thermophilus* aparece asociado a Arequipa, aunque la muestra con más *S. thermophilus* es b50, de Junín (94 %). Con dos réplicas, una sola muestra decide el resultado.
 
 > **Comentario:** con dos réplicas por grupo estos métodos tienen muy poca potencia y dan falsos positivos con facilidad. Úselos para aprender a leer sus gráficos (barras LDA, *volcano plot*), no para concluir. En la sección 8 los aplicará a sus muestras.
 
